@@ -501,3 +501,6 @@ new NormalModuleReplacementPlugin(
       }
     },
 ```
+
+
+![](/images/webpack.flowchart.png)
