@@ -58,7 +58,8 @@ function hasNpmFlag(flag) {
 ```
 - `isWebpackDevServer` - checks whether to run with webpack-dev-derver
 ## cache - `true` as default
-```js
+```
+
     /*
      * Cache generated modules and chunks to improve performance for multiple incremental builds.
      * This is enabled by default in watch mode.
@@ -67,9 +68,11 @@ function hasNpmFlag(flag) {
      * See: http://webpack.github.io/docs/configuration.html#cache
      */
     //cache: false,
+    
 ```
 ## entry - The entry point for the bundle
 ```js
+
     /*
      * The entry point for the bundle
      * Our Angular.js app
@@ -91,6 +94,7 @@ function hasNpmFlag(flag) {
 
 ## resolve - Options affecting the resolving of modules
 ```js
+
     /*
      * Options affecting the resolving of modules.
      *
@@ -111,7 +115,9 @@ function hasNpmFlag(flag) {
 ```
 - resolve '.ts', '.js', '.json' files in src and node_modules
 - `helpers.root` function is used to get real path 
+
 ```js
+
 var path = require('path');
 var ROOT = path.resolve(__dirname, '..');
 var root = path.join.bind(path, ROOT);
