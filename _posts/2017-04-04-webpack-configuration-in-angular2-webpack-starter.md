@@ -58,18 +58,7 @@ function hasNpmFlag(flag) {
 ```
 - `isWebpackDevServer` - checks whether to run with webpack-dev-derver
 ## cache - `true` as default
-```
 
-    /*
-     * Cache generated modules and chunks to improve performance for multiple incremental builds.
-     * This is enabled by default in watch mode.
-     * You can pass false to disable it.
-     *
-     * See: http://webpack.github.io/docs/configuration.html#cache
-     */
-    //cache: false,
-    
-```
 ## entry - The entry point for the bundle
 ```js
 
