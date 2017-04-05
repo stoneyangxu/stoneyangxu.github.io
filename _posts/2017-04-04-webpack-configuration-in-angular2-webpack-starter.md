@@ -21,17 +21,23 @@ switch (process.env.process.env.NODE_ENV) {
     module.exports = require('./config/webpack.dev')({env: 'development'});
 }
 ```
+
 - depends on the `NODE_ENV` value, webpack decides which config file to work with.
 - `webpack.prod.js` - is used for real production 
 - `webpack.test.js`- is used for test
 - `webpack.dev.js` - is used for develop
+
 ## `require('./config/webpack.prod')` returns a function that returns webpack config and use `{env: 'production'}` as parameter
+
 ![](/images/2017-04-04-20-35-01.jpg)
+
 - `commonConfig` returns common config object shared by prod, dev and test
 - [`webpackMerge`](https://www.npmjs.com/package/webpack-merge) is an 3rd lib to merge webpack configs
 > webpack-merge provides a merge function that concatenates arrays and merges objects creating a new object. If functions are encountered, it will execute them, run the results through the algorithm, and then wrap the returned values within a function again
 - the second parameter for webpackMerge is the configs for `specified env`
+
 # Webpack Common Config
+
 ## Ahead of all, check package mode by reading `node process env and argument`
 
 ```js
@@ -72,17 +78,17 @@ function hasNpmFlag(flag) {
     entry: {
 
       'polyfills': './src/polyfills.browser.ts',
-      'main':      AOT ? './src/main.browser.aot.ts' :
-                  './src/main.browser.ts'
-
+      'main':      AOT ? './src/main.browser.aot.ts' : './src/main.browser.ts'
     },
 ```
+
 - polyfills - create bundle base on packages imported in `polyfills.browser.ts`
 - main - create bundle for the main application, use different file depends on `AOT`
     - main.browser.ts use `bootstrapModule` to load `AppModule`
     - main.browser.aot.ts use `bootstrapModuleFactory` to load `AppModuleNgFactory` which is compiled
 
 ## resolve - Options affecting the resolving of modules
+
 ```js
 
     /*
@@ -103,6 +109,7 @@ function hasNpmFlag(flag) {
       modules: [helpers.root('src'), helpers.root('node_modules')],
     },
 ```
+
 - resolve '.ts', '.js', '.json' files in src and node_modules
 - `helpers.root` function is used to get real path 
 
@@ -115,8 +122,11 @@ exports.root = root;
 ```
 
 ## module - Options affecting the normal modules
+
 ### Rules for `ts` files
+
 - [@angularclass/hmr-loader](https://github.com/AngularClass/angular2-hmr) - Hot Module Reloading for Webpack 2 and Angular 2
+
 ```js
               loader: '@angularclass/hmr-loader',
               options: {
@@ -125,7 +135,9 @@ exports.root = root;
               }
             },
 ```
+
 - [ng-router-loader](https://www.npmjs.com/package/ng-router-loader) - Webpack loader for NgModule lazy loading using the angular router. Supports AOT and hot module load.
+
 ```js
             { // MAKE SURE TO CHAIN VANILLA JS CODE, I.E. TS COMPILATION OUTPUT.
               loader: 'ng-router-loader',
@@ -136,7 +148,9 @@ exports.root = root;
               }
             },
 ```
+
 - [awesome-typescript-loader](https://www.npmjs.com/package/awesome-typescript-loader) - compile ts files to js
+
 ```js
             {
               loader: 'awesome-typescript-loader',
@@ -145,13 +159,17 @@ exports.root = root;
               }
             }
 ```
+
 - [angular2-template-loader](https://www.npmjs.com/package/angular2-template-loader) - inlines all html and style's in angular2 components 
+
 ```js
             {
               loader: 'angular2-template-loader'
             }
 ```
+
 ### Other loaders 
+
 - json-loader
 - css-loader
 - sass-loader
@@ -160,10 +178,15 @@ exports.root = root;
 > notice `exclude` in css, sass and raw-loader, they will be loaded inline with `angular2-template-loader`
 
 ## plugins - Add additional plugins to the compiler
+
 ### assets-webpack-plugin - Webpack plugin that emits a json file with assets paths
+
 > This plug-in outputs a json file with the paths of the generated assets
+
 ### CheckerPlugin - `CheckerPlugin` is optional. Use it if you want async error reporting
+
 ### CommonsChunkPlugin - get common codes from multiple chunks
+
 ```js
       new CommonsChunkPlugin({
         name: 'polyfills',
@@ -180,18 +203,24 @@ exports.root = root;
         name: ['polyfills', 'vendor'].reverse()
       }),
 ```
+
 - The chunk name of the commons chunk. An existing chunk can be selected by passing a name of an existing chunk
 - `minChunks: module => /node_modules/.test(module.resource)` - move 3rd packages into vender
+
 ### ContextReplacementPlugin - Provides context to Angular's use of System.import
 > https://github.com/angular/angular/issues/11580
+
 ### CopyWebpackPlugin - copy files
+
 ```js
       new CopyWebpackPlugin([
         { from: 'src/assets', to: 'assets' },
         { from: 'src/meta'}
       ]),
 ```
+
 ### HtmlWebpackPlugin - inject metadata and bundles into html file
+
 ```js
       new HtmlWebpackPlugin({
         template: 'src/index.html',
@@ -201,19 +230,25 @@ exports.root = root;
         inject: 'head'
       }),
 ```
+
 ### ScriptExtHtmlWebpackPlugin - add defer to each script
+
 ```js
       new ScriptExtHtmlWebpackPlugin({
         defaultAttribute: 'defer'
       }),
 ```
+
 ### HtmlElementsPlugin - Generate html tags based on javascript maps
+
 ```js
       new HtmlElementsPlugin({
         headTags: require('./head-config.common')
       }),
 ```
+
 - add tags in html head
+
 ```html
   <!-- Configured Head Tags  -->
   <link rel="apple-touch-icon" sizes="57x57" href="/assets/icon/apple-icon-57x57.png">
@@ -234,9 +269,12 @@ exports.root = root;
 	<meta name="msapplication-TileImage" content="/assets/icon/ms-icon-144x144.png">
 	<meta name="theme-color" content="#00bcd4">
 ```
+
 ### LoaderOptionsPlugin 
 > The UglifyJsPlugin no longer puts loaders into minimize mode. The debug option has been removed. Loaders should no longer read their options from the webpack configuration. Instead you need to provide these options with the LoaderOptionsPlugin
+
 ### NormalModuleReplacementPlugin - replace resource
+
 ```js
       new NormalModuleReplacementPlugin(
         /facade(\\|\/)async/,
@@ -259,6 +297,7 @@ exports.root = root;
         helpers.root('node_modules/@angular/core/src/facade/math.js')
       ),
 ```
+
 ### [ngcWebpack.NgcWebpackPlugin](https://www.npmjs.com/package/ngc-webpack) - Angular Template Compiler Wrapper for Webpack
 
 ```js
