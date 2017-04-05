@@ -69,17 +69,17 @@ function hasNpmFlag(flag) {
 ## entry - The entry point for the bundle
 ```js
 
-    /*
-     * The entry point for the bundle
-     * Our Angular.js app
-     *
-     * See: http://webpack.github.io/docs/configuration.html#entry
-     */
-    entry: {
+/*
+ * The entry point for the bundle
+ * Our Angular.js app
+ *
+ * See: http://webpack.github.io/docs/configuration.html#entry
+ */
+entry: {
 
-      'polyfills': './src/polyfills.browser.ts',
-      'main':      AOT ? './src/main.browser.aot.ts' : './src/main.browser.ts'
-    },
+  'polyfills': './src/polyfills.browser.ts',
+  'main':      AOT ? './src/main.browser.aot.ts' : './src/main.browser.ts'
+},
 ```
 
 - polyfills - create bundle base on packages imported in `polyfills.browser.ts`
@@ -91,23 +91,23 @@ function hasNpmFlag(flag) {
 
 ```js
 
-    /*
-     * Options affecting the resolving of modules.
-     *
-     * See: http://webpack.github.io/docs/configuration.html#resolve
-     */
-    resolve: {
+/*
+ * Options affecting the resolving of modules.
+ *
+ * See: http://webpack.github.io/docs/configuration.html#resolve
+ */
+resolve: {
 
-      /*
-       * An array of extensions that should be used to resolve modules.
-       *
-       * See: http://webpack.github.io/docs/configuration.html#resolve-extensions
-       */
-      extensions: ['.ts', '.js', '.json'],
+  /*
+   * An array of extensions that should be used to resolve modules.
+   *
+   * See: http://webpack.github.io/docs/configuration.html#resolve-extensions
+   */
+  extensions: ['.ts', '.js', '.json'],
 
-      // An array of directory names to be resolved to the current directory
-      modules: [helpers.root('src'), helpers.root('node_modules')],
-    },
+  // An array of directory names to be resolved to the current directory
+  modules: [helpers.root('src'), helpers.root('node_modules')],
+},
 ```
 
 - resolve '.ts', '.js', '.json' files in src and node_modules
@@ -128,44 +128,45 @@ exports.root = root;
 - [@angularclass/hmr-loader](https://github.com/AngularClass/angular2-hmr) - Hot Module Reloading for Webpack 2 and Angular 2
 
 ```js
-              loader: '@angularclass/hmr-loader',
-              options: {
-                pretty: !isProd,
-                prod: isProd
-              }
-            },
+{
+  loader: '@angularclass/hmr-loader',
+  options: {
+    pretty: !isProd,
+    prod: isProd
+  }
+},
 ```
 
 - [ng-router-loader](https://www.npmjs.com/package/ng-router-loader) - Webpack loader for NgModule lazy loading using the angular router. Supports AOT and hot module load.
 
 ```js
-            { // MAKE SURE TO CHAIN VANILLA JS CODE, I.E. TS COMPILATION OUTPUT.
-              loader: 'ng-router-loader',
-              options: {
-                loader: 'async-import',
-                genDir: 'compiled',
-                aot: AOT
-              }
-            },
+{ // MAKE SURE TO CHAIN VANILLA JS CODE, I.E. TS COMPILATION OUTPUT.
+  loader: 'ng-router-loader',
+  options: {
+    loader: 'async-import',
+    genDir: 'compiled',
+    aot: AOT
+  }
+},
 ```
 
 - [awesome-typescript-loader](https://www.npmjs.com/package/awesome-typescript-loader) - compile ts files to js
 
 ```js
-            {
-              loader: 'awesome-typescript-loader',
-              options: {
-                configFileName: 'tsconfig.webpack.json'
-              }
-            }
+{
+  loader: 'awesome-typescript-loader',
+  options: {
+    configFileName: 'tsconfig.webpack.json'
+  }
+}
 ```
 
 - [angular2-template-loader](https://www.npmjs.com/package/angular2-template-loader) - inlines all html and style's in angular2 components 
 
 ```js
-            {
-              loader: 'angular2-template-loader'
-            }
+{
+  loader: 'angular2-template-loader'
+}
 ```
 
 ### Other loaders 
@@ -188,20 +189,20 @@ exports.root = root;
 ### CommonsChunkPlugin - get common codes from multiple chunks
 
 ```js
-      new CommonsChunkPlugin({
-        name: 'polyfills',
-        chunks: ['polyfills']
-      }),
-      // This enables tree shaking of the vendor modules
-      new CommonsChunkPlugin({
-        name: 'vendor',
-        chunks: ['main'],
-        minChunks: module => /node_modules/.test(module.resource)
-      }),
-      // Specify the correct order the scripts will be injected in
-      new CommonsChunkPlugin({
-        name: ['polyfills', 'vendor'].reverse()
-      }),
+  new CommonsChunkPlugin({
+    name: 'polyfills',
+    chunks: ['polyfills']
+  }),
+  // This enables tree shaking of the vendor modules
+  new CommonsChunkPlugin({
+    name: 'vendor',
+    chunks: ['main'],
+    minChunks: module => /node_modules/.test(module.resource)
+  }),
+  // Specify the correct order the scripts will be injected in
+  new CommonsChunkPlugin({
+    name: ['polyfills', 'vendor'].reverse()
+  }),
 ```
 
 - The chunk name of the commons chunk. An existing chunk can be selected by passing a name of an existing chunk
@@ -215,38 +216,38 @@ exports.root = root;
 ### CopyWebpackPlugin - copy files
 
 ```js
-      new CopyWebpackPlugin([
-        { from: 'src/assets', to: 'assets' },
-        { from: 'src/meta'}
-      ]),
+  new CopyWebpackPlugin([
+    { from: 'src/assets', to: 'assets' },
+    { from: 'src/meta'}
+  ]),
 ```
 
 ### HtmlWebpackPlugin - inject metadata and bundles into html file
 
 ```js
-      new HtmlWebpackPlugin({
-        template: 'src/index.html',
-        title: METADATA.title,
-        chunksSortMode: 'dependency',
-        metadata: METADATA,
-        inject: 'head'
-      }),
+  new HtmlWebpackPlugin({
+    template: 'src/index.html',
+    title: METADATA.title,
+    chunksSortMode: 'dependency',
+    metadata: METADATA,
+    inject: 'head'
+  }),
 ```
 
 ### ScriptExtHtmlWebpackPlugin - add defer to each script
 
 ```js
-      new ScriptExtHtmlWebpackPlugin({
-        defaultAttribute: 'defer'
-      }),
+  new ScriptExtHtmlWebpackPlugin({
+    defaultAttribute: 'defer'
+  }),
 ```
 
 ### HtmlElementsPlugin - Generate html tags based on javascript maps
 
 ```js
-      new HtmlElementsPlugin({
-        headTags: require('./head-config.common')
-      }),
+  new HtmlElementsPlugin({
+    headTags: require('./head-config.common')
+  }),
 ```
 
 - add tags in html head
@@ -254,22 +255,13 @@ exports.root = root;
 ```html
   <!-- Configured Head Tags  -->
   <link rel="apple-touch-icon" sizes="57x57" href="/assets/icon/apple-icon-57x57.png">
-	<link rel="apple-touch-icon" sizes="60x60" href="/assets/icon/apple-icon-60x60.png">
-	<link rel="apple-touch-icon" sizes="72x72" href="/assets/icon/apple-icon-72x72.png">
-	<link rel="apple-touch-icon" sizes="76x76" href="/assets/icon/apple-icon-76x76.png">
-	<link rel="apple-touch-icon" sizes="114x114" href="/assets/icon/apple-icon-114x114.png">
-	<link rel="apple-touch-icon" sizes="120x120" href="/assets/icon/apple-icon-120x120.png">
-	<link rel="apple-touch-icon" sizes="144x144" href="/assets/icon/apple-icon-144x144.png">
-	<link rel="apple-touch-icon" sizes="152x152" href="/assets/icon/apple-icon-152x152.png">
-	<link rel="apple-touch-icon" sizes="180x180" href="/assets/icon/apple-icon-180x180.png">
-	<link rel="icon" type="image/png" sizes="192x192" href="/assets/icon/android-icon-192x192.png">
-	<link rel="icon" type="image/png" sizes="32x32" href="/assets/icon/favicon-32x32.png">
-	<link rel="icon" type="image/png" sizes="96x96" href="/assets/icon/favicon-96x96.png">
-	<link rel="icon" type="image/png" sizes="16x16" href="/assets/icon/favicon-16x16.png">
-	<link rel="manifest" href="/assets/manifest.json">
-	<meta name="msapplication-TileColor" content="#00bcd4">
-	<meta name="msapplication-TileImage" content="/assets/icon/ms-icon-144x144.png">
-	<meta name="theme-color" content="#00bcd4">
+<link rel="apple-touch-icon" sizes="60x60" href="/assets/icon/apple-icon-60x60.png">
+<link rel="apple-touch-icon" sizes="72x72" href="/assets/icon/apple-icon-72x72.png">
+
+<link rel="manifest" href="/assets/manifest.json">
+<meta name="msapplication-TileColor" content="#00bcd4">
+<meta name="msapplication-TileImage" content="/assets/icon/ms-icon-144x144.png">
+<meta name="theme-color" content="#00bcd4">
 ```
 
 ### LoaderOptionsPlugin 
@@ -278,36 +270,36 @@ exports.root = root;
 ### NormalModuleReplacementPlugin - replace resource
 
 ```js
-      new NormalModuleReplacementPlugin(
-        /facade(\\|\/)async/,
-        helpers.root('node_modules/@angular/core/src/facade/async.js')
-      ),
-      new NormalModuleReplacementPlugin(
-        /facade(\\|\/)collection/,
-        helpers.root('node_modules/@angular/core/src/facade/collection.js')
-      ),
-      new NormalModuleReplacementPlugin(
-        /facade(\\|\/)errors/,
-        helpers.root('node_modules/@angular/core/src/facade/errors.js')
-      ),
-      new NormalModuleReplacementPlugin(
-        /facade(\\|\/)lang/,
-        helpers.root('node_modules/@angular/core/src/facade/lang.js')
-      ),
-      new NormalModuleReplacementPlugin(
-        /facade(\\|\/)math/,
-        helpers.root('node_modules/@angular/core/src/facade/math.js')
-      ),
+  new NormalModuleReplacementPlugin(
+    /facade(\\|\/)async/,
+    helpers.root('node_modules/@angular/core/src/facade/async.js')
+  ),
+  new NormalModuleReplacementPlugin(
+    /facade(\\|\/)collection/,
+    helpers.root('node_modules/@angular/core/src/facade/collection.js')
+  ),
+new NormalModuleReplacementPlugin(
+    /facade(\\|\/)errors/,
+    helpers.root('node_modules/@angular/core/src/facade/errors.js')
+  ),
+  new NormalModuleReplacementPlugin(
+    /facade(\\|\/)lang/,
+    helpers.root('node_modules/@angular/core/src/facade/lang.js')
+  ),
+  new NormalModuleReplacementPlugin(
+    /facade(\\|\/)math/,
+    helpers.root('node_modules/@angular/core/src/facade/math.js')
+  ),
 ```
 
 ### [ngcWebpack.NgcWebpackPlugin](https://www.npmjs.com/package/ngc-webpack) - Angular Template Compiler Wrapper for Webpack
 
 ```js
-      new ngcWebpack.NgcWebpackPlugin({
-        disabled: !AOT,
-        tsConfig: helpers.root('tsconfig.webpack.json'),
-        resourceOverride: helpers.root('config/resource-override.js')
-      })
+  new ngcWebpack.NgcWebpackPlugin({
+    disabled: !AOT,
+    tsConfig: helpers.root('tsconfig.webpack.json'),
+    resourceOverride: helpers.root('config/resource-override.js')
+  })
 ```
 
 # Prod Config VS Dev Config
@@ -357,111 +349,111 @@ exports.root = root;
 ![](/images/2017-04-05-21-35-22.jpg)
 ## Optimize JS and Extract CSS files is additional in prod
 ```js
-      /**
-       * Webpack plugin to optimize a JavaScript file for faster initial load
-       * by wrapping eagerly-invoked functions.
-       *
-       * See: https://github.com/vigneshshanmugam/optimize-js-plugin
-       */
+  /**
+   * Webpack plugin to optimize a JavaScript file for faster initial load
+   * by wrapping eagerly-invoked functions.
+   *
+   * See: https://github.com/vigneshshanmugam/optimize-js-plugin
+   */
 
-      new OptimizeJsPlugin({
-        sourceMap: false
-      }),
+  new OptimizeJsPlugin({
+    sourceMap: false
+  }),
 
-      /**
-       * Plugin: ExtractTextPlugin
-       * Description: Extracts imported CSS files into external stylesheet
-       *
-       * See: https://github.com/webpack/extract-text-webpack-plugin
-       */
-      new ExtractTextPlugin('[name].[contenthash].css'),
+  /**
+   * Plugin: ExtractTextPlugin
+   * Description: Extracts imported CSS files into external stylesheet
+   *
+   * See: https://github.com/webpack/extract-text-webpack-plugin
+   */
+  new ExtractTextPlugin('[name].[contenthash].css'),
 
 ```
 
 ## Define variables with metadata
 
 ```js
-      new DefinePlugin({
-        'ENV': JSON.stringify(METADATA.ENV),
-        'HMR': METADATA.HMR,
-        'process.env': {
-          'ENV': JSON.stringify(METADATA.ENV),
-          'NODE_ENV': JSON.stringify(METADATA.ENV),
-          'HMR': METADATA.HMR,
-        }
-      }),
+  new DefinePlugin({
+    'ENV': JSON.stringify(METADATA.ENV),
+    'HMR': METADATA.HMR,
+    'process.env': {
+      'ENV': JSON.stringify(METADATA.ENV),
+      'NODE_ENV': JSON.stringify(METADATA.ENV),
+      'HMR': METADATA.HMR,
+    }
+  }),
 
 ```
 
 ## Use UglifyJsPlugin to uglify js files `in prod`
 ```js
 
-      /**
-       * Plugin: UglifyJsPlugin
-       * Description: Minimize all JavaScript output of chunks.
-       * Loaders are switched into minimizing mode.
-       *
-       * See: https://webpack.github.io/docs/list-of-plugins.html#uglifyjsplugin
-       */
-      // NOTE: To debug prod builds uncomment //debug lines and comment //prod lines
-      new UglifyJsPlugin({
-        beautify: false, //prod
-        output: {
-          comments: false
-        }, //prod
-        mangle: {
-          screw_ie8: true
-        }, //prod
-        compress: {
-          screw_ie8: true,
-          warnings: false,
-          conditionals: true,
-          unused: true,
-          comparisons: true,
-          sequences: true,
-          dead_code: true,
-          evaluate: true,
-          if_return: true,
-          join_vars: true,
-          negate_iife: false // we need this for lazy v8
-        },
-      }),
+  /**
+   * Plugin: UglifyJsPlugin
+   * Description: Minimize all JavaScript output of chunks.
+   * Loaders are switched into minimizing mode.
+   *
+   * See: https://webpack.github.io/docs/list-of-plugins.html#uglifyjsplugin
+   */
+  // NOTE: To debug prod builds uncomment //debug lines and comment //prod lines
+  new UglifyJsPlugin({
+    beautify: false, //prod
+    output: {
+      comments: false
+    }, //prod
+    mangle: {
+      screw_ie8: true
+    }, //prod
+    compress: {
+      screw_ie8: true,
+      warnings: false,
+      conditionals: true,
+      unused: true,
+      comparisons: true,
+      sequences: true,
+      dead_code: true,
+      evaluate: true,
+      if_return: true,
+      join_vars: true,
+      negate_iife: false // we need this for lazy v8
+    },
+  }),
 ```
 
 ## Replace some module `in prod`
 ```js
-      new NormalModuleReplacementPlugin(
-        /angular2-hmr/,
-        helpers.root('config/empty.js')
-      ),
+  new NormalModuleReplacementPlugin(
+    /angular2-hmr/,
+    helpers.root('config/empty.js')
+  ),
 
-      new NormalModuleReplacementPlugin(
-        /zone\.js(\\|\/)dist(\\|\/)long-stack-trace-zone/,
-        helpers.root('config/empty.js')
-      ),
+  new NormalModuleReplacementPlugin(
+    /zone\.js(\\|\/)dist(\\|\/)long-stack-trace-zone/,
+    helpers.root('config/empty.js')
+  ),
 ```
 ## LoaderOptionsPlugin
 - Use LoaderOptionsPlugin to define special options form `htmlLoader` in prod
 - Only set debug to be true in dev
 ```js
-          htmlLoader: {
-            minimize: true,
-            removeAttributeQuotes: false,
-            caseSensitive: true,
-            customAttrSurround: [
-              [/#/, /(?:)/],
-              [/\*/, /(?:)/],
-              [/\[?\(?/, /(?:)/]
-            ],
-            customAttrAssign: [/\)?\]?=/]
-          },
+  htmlLoader: {
+    minimize: true,
+    removeAttributeQuotes: false,
+    caseSensitive: true,
+    customAttrSurround: [
+      [/#/, /(?:)/],
+      [/\*/, /(?:)/],
+      [/\[?\(?/, /(?:)/]
+    ],
+    customAttrAssign: [/\)?\]?=/]
+  },
 
 ```
 # Special configs in dev
 ## library and libraryTarget
 ```js
-      library: 'ac_[name]',
-      libraryTarget: 'var',
+  library: 'ac_[name]',
+  libraryTarget: 'var',
 ```
 - output.library allows you to optionally specify the name of your library.
 
@@ -475,18 +467,18 @@ exports.root = root;
 ## AddAssetHtmlPlugin
 - add dll files into html file
 ```js
-      /**
-       * Plugin: AddAssetHtmlPlugin
-       * Description: Adds the given JS or CSS file to the files
-       * Webpack knows about, and put it into the list of assets
-       * html-webpack-plugin injects into the generated html.
-       *
-       * See: https://github.com/SimenB/add-asset-html-webpack-plugin
-       */
-      new AddAssetHtmlPlugin([
-        { filepath: helpers.root(`dll/${DllBundlesPlugin.resolveFile('polyfills')}`) },
-        { filepath: helpers.root(`dll/${DllBundlesPlugin.resolveFile('vendor')}`) }
-      ]),
+  /**
+   * Plugin: AddAssetHtmlPlugin
+   * Description: Adds the given JS or CSS file to the files
+   * Webpack knows about, and put it into the list of assets
+   * html-webpack-plugin injects into the generated html.
+   *
+   * See: https://github.com/SimenB/add-asset-html-webpack-plugin
+   */
+  new AddAssetHtmlPlugin([
+    { filepath: helpers.root(`dll/${DllBundlesPlugin.resolveFile('polyfills')}`) },
+    { filepath: helpers.root(`dll/${DllBundlesPlugin.resolveFile('vendor')}`) }
+  ]),
 ```
 
 ## devServer - start a server for development
