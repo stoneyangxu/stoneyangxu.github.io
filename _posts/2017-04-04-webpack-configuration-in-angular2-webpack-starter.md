@@ -57,6 +57,7 @@ function hasNpmFlag(flag) {
 }
 ```
 - `isWebpackDevServer` - checks whether to run with webpack-dev-derver
+
 ## cache - `true` as default
 
 ## entry - The entry point for the bundle
