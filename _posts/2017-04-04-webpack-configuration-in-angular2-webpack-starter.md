@@ -210,6 +210,8 @@ exports.root = root;
 ### ContextReplacementPlugin - Provides context to Angular's use of System.import
 > https://github.com/angular/angular/issues/11580
 
+- replace `/angular(\\|\/)core(\\|\/)src(\\|\/)linker/,` to `/angular(\|/)core(\|/)@angular/,` for angular 4
+
 ### CopyWebpackPlugin - copy files
 
 ```js
@@ -306,4 +308,204 @@ exports.root = root;
         tsConfig: helpers.root('tsconfig.webpack.json'),
         resourceOverride: helpers.root('config/resource-override.js')
       })
+```
+
+# Prod Config VS Dev Config
+
+## Get metadata from common config and replace variables with webpackMerge
+
+- Appending `host`, `port` and `ENV`
+- Only enable `hor module replacement` for develop and with `hot` flag
+
+![](/images/2017-04-05-21-15-44.jpg)
+
+## devtool - Choose a developer tool to enhance debugging
+
+- Use different devtool for prod and dev:
+
+![](/images/2017-04-05-21-17-06.jpg)
+
+![](/images/2017-04-05-21-11-18.jpg)
+
+## path - The output directory as absolute path (required).
+
+- build result files to dist 
+- they are the same in prod and dev
+```js
+      path: helpers.root('dist'),
+```
+## filenames
+- filename - name of the bundle
+- sourceMapFilename - name of the source map file
+- chunkFilename - name of non-entry files
+-  `chunkhash` id added in prod
+
+![](/images/2017-04-05-21-18-34.jpg)
+
+## .ts loader
+- `tslint-loader` is added in dev
+
+![](/images/2017-04-05-21-22-47.jpg)
+
+- There is not any new rules for ts files in prod. Using the rules in common config, only load and compile.
+
+## css and sass loader
+- css and sass used by Angular Components (exclude: [helpers.root('src', 'styles')]) have already loaded in common config, 
+- the other style files are `loaded`(include: [helpers.root('src', 'styles')])
+- the difference between prod and dev is that styles are `compressed with ExtractTextPlugin` in prod
+
+![](/images/2017-04-05-21-35-22.jpg)
+## Optimize JS and Extract CSS files is additional in prod
+```js
+      /**
+       * Webpack plugin to optimize a JavaScript file for faster initial load
+       * by wrapping eagerly-invoked functions.
+       *
+       * See: https://github.com/vigneshshanmugam/optimize-js-plugin
+       */
+
+      new OptimizeJsPlugin({
+        sourceMap: false
+      }),
+
+      /**
+       * Plugin: ExtractTextPlugin
+       * Description: Extracts imported CSS files into external stylesheet
+       *
+       * See: https://github.com/webpack/extract-text-webpack-plugin
+       */
+      new ExtractTextPlugin('[name].[contenthash].css'),
+
+```
+
+## Define variables with metadata
+
+```js
+      new DefinePlugin({
+        'ENV': JSON.stringify(METADATA.ENV),
+        'HMR': METADATA.HMR,
+        'process.env': {
+          'ENV': JSON.stringify(METADATA.ENV),
+          'NODE_ENV': JSON.stringify(METADATA.ENV),
+          'HMR': METADATA.HMR,
+        }
+      }),
+
+```
+
+## Use UglifyJsPlugin to uglify js files `in prod`
+```js
+
+      /**
+       * Plugin: UglifyJsPlugin
+       * Description: Minimize all JavaScript output of chunks.
+       * Loaders are switched into minimizing mode.
+       *
+       * See: https://webpack.github.io/docs/list-of-plugins.html#uglifyjsplugin
+       */
+      // NOTE: To debug prod builds uncomment //debug lines and comment //prod lines
+      new UglifyJsPlugin({
+        beautify: false, //prod
+        output: {
+          comments: false
+        }, //prod
+        mangle: {
+          screw_ie8: true
+        }, //prod
+        compress: {
+          screw_ie8: true,
+          warnings: false,
+          conditionals: true,
+          unused: true,
+          comparisons: true,
+          sequences: true,
+          dead_code: true,
+          evaluate: true,
+          if_return: true,
+          join_vars: true,
+          negate_iife: false // we need this for lazy v8
+        },
+      }),
+```
+
+## Replace some module `in prod`
+```js
+      new NormalModuleReplacementPlugin(
+        /angular2-hmr/,
+        helpers.root('config/empty.js')
+      ),
+
+      new NormalModuleReplacementPlugin(
+        /zone\.js(\\|\/)dist(\\|\/)long-stack-trace-zone/,
+        helpers.root('config/empty.js')
+      ),
+```
+## LoaderOptionsPlugin
+- Use LoaderOptionsPlugin to define special options form `htmlLoader` in prod
+- Only set debug to be true in dev
+```js
+          htmlLoader: {
+            minimize: true,
+            removeAttributeQuotes: false,
+            caseSensitive: true,
+            customAttrSurround: [
+              [/#/, /(?:)/],
+              [/\*/, /(?:)/],
+              [/\[?\(?/, /(?:)/]
+            ],
+            customAttrAssign: [/\)?\]?=/]
+          },
+
+```
+# Special configs in dev
+## library and libraryTarget
+```js
+      library: 'ac_[name]',
+      libraryTarget: 'var',
+```
+- output.library allows you to optionally specify the name of your library.
+
+- output.libraryTarget allows you to specify the type of output. I.e. CommonJs, AMD, for usage in a script tag or as UMD module.
+
+## DllBundlesPlugin
+> A Plugin for Webpack that uses Webpack's DllPlugin & DllReferencePlugin to create bundle configurations as part of the build process. The plugin will monitor for changes in packages and rebuild the bundles accordingly
+
+![](/images/2017-04-05-21-59-53.jpg)
+
+## AddAssetHtmlPlugin
+- add dll files into html file
+```js
+      /**
+       * Plugin: AddAssetHtmlPlugin
+       * Description: Adds the given JS or CSS file to the files
+       * Webpack knows about, and put it into the list of assets
+       * html-webpack-plugin injects into the generated html.
+       *
+       * See: https://github.com/SimenB/add-asset-html-webpack-plugin
+       */
+      new AddAssetHtmlPlugin([
+        { filepath: helpers.root(`dll/${DllBundlesPlugin.resolveFile('polyfills')}`) },
+        { filepath: helpers.root(`dll/${DllBundlesPlugin.resolveFile('vendor')}`) }
+      ]),
+```
+
+## devServer - start a server for development
+```js
+    /**
+     * Webpack Development Server configuration
+     * Description: The webpack-dev-server is a little node.js Express server.
+     * The server emits information about the compilation state to the client,
+     * which reacts to those events.
+     *
+     * See: https://webpack.github.io/docs/webpack-dev-server.html
+     */
+    devServer: {
+      port: METADATA.port,
+      host: METADATA.host,
+      historyApiFallback: true,
+      watchOptions: {
+        aggregateTimeout: 300,
+        poll: 1000
+      }
+    },
 ```
