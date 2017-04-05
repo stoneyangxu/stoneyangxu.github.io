@@ -1,10 +1,10 @@
 ---
 layout: post
-title:  "Test with Karma"
+title:  "Unit test with Karma in Angular2-webpack-starter"
 date:   2017-04-05 23:47:44
 categories: Angular2-webpack-starter
 ---
-# Test with Karma
+# Unit Test with Karma in Angular2-webpack-starter
 - The entrance is `karmr.conf.js` in the root of the project
 ```js
 // Look in ./config for karma.conf.js
