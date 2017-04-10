@@ -26,7 +26,7 @@ github_username:  stoneyangxu
 
 # Build settings
 markdown: kramdown
-theme: pixyll
+theme: jekyll-theme-architect
 gems:
   - jekyll-feed
 exclude:
