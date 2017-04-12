@@ -1,11 +1,12 @@
 ---
 layout: post
 title:  "Developing a Tab component"
-date:   2017-04-04 19:15:49
-categories: Angular4
+date:   2017-04-12 00:30:56
+categories: Angular
 ---
 # Developing a Tab component
 - The consumer should use it like this:
+
 ```html
 <tabs>
   <tab tabTitle="Tab 1">
@@ -17,7 +18,8 @@ categories: Angular4
 </tabs>
 ```
 
-# Create a component like this
+# Create `tabs` component 
+
 ```ts
 import { Component, OnInit } from '@angular/core';
 
@@ -34,6 +36,7 @@ export class TabsComponent implements OnInit {
   }
 }
 ```
+
 ```html
 <ul>
   <li>Tab 1</li>
@@ -41,11 +44,13 @@ export class TabsComponent implements OnInit {
 </ul>
 ```
 - Use the component with `my-tabs` tag
+
 ```html
 <my-tabs></my-tabs>
 ```
 # We need a place to show the tab content with `ng-content`
 - Add ng-content in the template
+
 ```html
 <ul>
   <li>Tab 1</li>
@@ -54,12 +59,14 @@ export class TabsComponent implements OnInit {
 <ng-content></ng-content>
 ```
 - When using the component, put tab contents in `<tabs>` tag
+
 ```html
 <my-tabs>
   <p>Tab content</p>
 </my-tabs>
 ```
 # Create a tab element to replace `<li>Tab 1</li>` with the property `tabTitle`
+
 ```ts
 import { Component, OnInit, Input } from '@angular/core';
 
@@ -85,6 +92,7 @@ export class TabComponent implements OnInit {
 </div>
 ```
 - Use the component like this:
+
 ```html
 <my-tabs>
   <my-tab tabTitle="tab1">
@@ -97,6 +105,7 @@ export class TabComponent implements OnInit {
 ```
 # Generate tabs dynamic
 - Using `*ngFor` directive to generate li element
+
 ```html
 <ul>
   <li *ngFor="let tab of tabs">{{ tab.tabTitle }}</li>
@@ -107,7 +116,9 @@ export class TabComponent implements OnInit {
   @ContentChildren(TabComponent) tabs: QueryList<TabComponent>;
 ```
 # And `how to test` component with ViewChildren
+
 - Create test component in the spec file as the host
+
 ```ts
 @Component({
   selector: 'test-my-tabs',
@@ -118,6 +129,7 @@ export class TestTabsComponent {
 }
 ```
 - Create html template in spec file
+
 ```ts
   const html = `
     <my-tabs>
@@ -132,6 +144,7 @@ export class TestTabsComponent {
 ```
 
 - Init Angular test component with the `TestTabsComponent`
+
 ```ts
   beforeEach(async(() => {
     TestBed.configureTestingModule({
@@ -151,6 +164,7 @@ export class TestTabsComponent {
 ```
 
 - Override the component template with `TestBed.overrideComponent` before creating the test component and `do not compile the component before override`
+
 ```ts
   beforeEach(() => {
 
@@ -163,9 +177,55 @@ export class TestTabsComponent {
   });
 ```
 - Then the children components will be created
+
 ```ts
   it('should display childrens components with the property tabs', () => {
     const tabs = fixture.debugElement.queryAll(By.css('li'));
     expect(tabs.length).toBe(2);
   });
+```
+- And we can get `TabsComponent instance` with `@ViewChild`
+
+```ts
+@Component({
+  selector: 'test-my-tabs',
+  template: ''
+})
+export class TestTabsComponent {
+  @ViewChild(TabsComponent) tabs: TabsComponent;
+  constructor() { }
+}
+
+  it('should active the first tab as default', () => {
+    const tabsComponent = component.tabs;
+    expect(tabsComponent.tabs.first.active).toBeTruthy();
+    expect(tabsComponent.tabs.last.active).toBeFalsy();
+  });
+```
+# Switch the tab content when clicking the `tab title`
+## Test first 
+
+```ts
+  it('should siwtch tab when clicking the title', () => {
+    const tabTitles = fixture.debugElement.queryAll(By.css('li'));
+    const secondTabTitle = tabTitles[tabTitles.length - 1].nativeElement;
+
+    secondTabTitle.click();
+
+    expect(component.tabs.tabs.first.active).toBeFalsy('the first tab is unactive');
+    expect(component.tabs.tabs.last.active).toBeTruthy('the tab clicked is active');
+  });
+```
+## Then bind click event to selectTab method
+
+```html
+  <li *ngFor="let tab of tabs" (click)="selectTab(tab)">
+    {{ tab.tabTitle }}
+  </li>
+```
+```ts
+  selectTab(tab: TabComponent) {
+    this.tabs.forEach(x => x.active = false);
+    tab.active = true;
+  }
 ```
