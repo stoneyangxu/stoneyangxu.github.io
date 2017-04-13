@@ -205,3 +205,68 @@ Tests become shorter and more clear.
     expect(getAriaValuenow(fixture)).toBe('12.5');
   });
 ```
+
+# Specify progress bar styles with `type` property
+
+```ts
+  it('should specify style with type property', () => {
+    fixture = createGenericTestComponent(`
+      <my-progress-bar [value]="25" [max]="200" type="warning"></my-progress-bar>
+    `, TestComponent);
+
+    expect(getProgressElement(fixture).classList).toContain('bg-warning');
+  });
+```
+Add class to process-bar 
+
+```html
+[class]="'progress-bar bg-' + type"
+```
+And get `type` property as @Input()
+
+```ts
+  @Input() type: string;
+```
+
+# Displaying percent value in the center of the bar if `showValue` is set to true
+
+```ts
+  it('should hide current percent value in bar as default', () => {
+    fixture = createGenericTestComponent(`
+      <my-progress-bar [value]="25"></my-progress-bar>
+    `, TestComponent);
+
+    expect(getProgressElement(fixture).textContent.trim().toBe('');
+  });
+
+  it('should show current percent value in bar if showValue is true', () => {
+    fixture = createGenericTestComponent(`
+      <my-progress-bar [value]="25"></my-progress-bar>
+    `, TestComponent);
+
+    expect(getProgressElement(fixture).textContent.trim()).toBe('25%');
+  });
+```
+
+Add showValue property and show current percent value in the bar with `*ngIf` directive
+
+```html
+    <span *ngIf="showValue">{{getProgressPercent()}}%</span>
+```
+
+# Add `striped property` and `animated property` as we have done with showValue property, add class with `[ngClass]` directive
+
+```html
+    [ngClass]="{'progress-bar-striped': striped, 'progress-bar-animated': animated}"
+```
+
+# Show custom labels inside the selector
+
+```ts
+    <span *ngIf="showValue">{{getProgressPercent()}}%</span><ng-content></ng-content>
+```
+
+# Gains
+- Progress bar supports with bootstrap: `progress, progress-bar, progress-bar-striped, progress-bar-animated`
+- Element width with `w-{percent}` class
+- Add class with `class`, `[class]` and `[ngClass]` directive
