@@ -2,3 +2,15 @@
 ---
 
 @import "jekyll-theme-tactile";
+
+@media (min-width: 960px) {
+  #container .inner {
+    width: 960px;
+  }
+}
+
+@media (min-width: 1280px) {
+  #container .inner {
+    width: 1280px;
+  }
+}
