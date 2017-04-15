@@ -46,7 +46,9 @@ export class ContentRef {
   constructor(public nodes: any[], public viewRef?: ViewRef, public componentRef?: ComponentRef<any>) {}
 }
 ```
-> todo
+- nodes - elements to be added into <ng-content>. Text nodes created by Renderer when content is string or nodes created by createEmbeddedView method when content is a template reference
+- viewRef - the view reference created by createEmbeddedView method if the content is template
+- componentRef - not used in PopupService
 
 ### ContentRef will be created when opening a pop-up window
 
