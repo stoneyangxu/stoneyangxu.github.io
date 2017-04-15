@@ -191,5 +191,3 @@ export class HolderComponent implements OnInit {
 - Get `componentFactory` with method `componentFactoryResolver.resolveComponentFactory`
 - Get the reference to `ng-template` that contains the attribute directive through `dtPlaceholder.viewContainerRef`.
 - Load component dynamically with `placeholderReference.createComponent(componentFactory)`
-
-# To be continue...
