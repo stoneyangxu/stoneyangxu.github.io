@@ -69,12 +69,12 @@ interface ClientRect {
     };
 ```
 
-#### Horizontal // todo
+#### Horizontal
 - left - the left position of the host element.
 - center - the target element and the host element align by `center line`. 
 - right - the right position of the hose element.
 
-#### Vertical // todo
+#### Vertical
 - top - the top position of the host element.
 - center - the target element and the host element align by `middle line`.
 - bottom: the bottom position of the host element. 
@@ -138,4 +138,33 @@ interface ClientRect {
 
     return targetElPosition;
 ```
+## How to use it?
+
+### There is a button and a tooltip content
+
+```html
+<button #hostButton class="btn">A button</button>
+
+<div #toptipWin class="tooltip show">
+  <div class="tooltip-inner">
+    Content in tooltip!
+  </div>
+</div>
+```
+
+### Get element reference in component and use positioning to set the position
+
+```ts
+  @ViewChild('hostButton') host: ElementRef;
+  @ViewChild('toptipWin') target: ElementRef;
+  ngOnInit() {
+    positionElements(
+      this.host.nativeElement,
+      this.target.nativeElement,
+      'top-right',
+    );
+  }
+```
+
+![](/images/2017-04-16-15-12-20.jpg)
 
