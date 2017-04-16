@@ -546,7 +546,45 @@ export class TooltipWindowComponent implements OnInit {
       this.zoneSubscription.unsubscribe();
 ```
 
-## `toggle` supports
+## `toggle` supports in ng-bootstrap
 
+> Specifies events that should trigger. Supports a space separated list of event names.
 
+It can be used like:
+
+```html
+<!-- open when click and close on blur -->
+<button type="button" class="btn btn-secondary" ngbTooltip="You see, I show up on click!" triggers="click:blur">
+  Click me!
+</button>
+
+<!-- when using 'manual', only support open/close by calling methods -->
+<button type="button" class="btn btn-secondary" ngbTooltip="What a great tip!" triggers="manual" #t="ngbTooltip" (click)="t.open()">
+  Click me to open a tooltip
+</button>
+<button type="button" class="btn btn-secondary" (click)="t.close()">
+  Click me to close a tooltip
+</button>
+```
+
+### The `trigglers` is processed in `ngOnInit` method
+
+```ts
+  ngOnInit() {
+    this._unregisterListenersFn = listenToTriggers(
+        this._renderer, this._elementRef.nativeElement, this.triggers, this.open.bind(this), this.close.bind(this),
+        this.toggle.bind(this));
+  }
+```
+
+```ts
+export function listenToTriggers(renderer: any, nativeElement: any, triggers: string, openFn, closeFn, toggleFn) { }
+```
+
+The `listenToTriggers` function is supplied by `util/triggers`.
+
+- `renderer` is used to listen events.
+- `nativeElement` is the target to be bind events.
+- `triggers` is event names split with `:`
+- `openFn, closeFn, toggleFn` bind to the real functions to be done.
 
