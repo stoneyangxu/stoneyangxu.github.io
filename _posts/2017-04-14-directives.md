@@ -17,10 +17,12 @@ categories: Angular
 ## Lifefycle of directives
 
 ### Some hooks exist in both component and directive
+
 - ngOnInit 
 - ngOnChanges
 - ngDoCheck
 - ngOnDestroy
+
 ### Some hooks only exist in component
 - ngAfterContentInit
 - ngAfterContentChecked
