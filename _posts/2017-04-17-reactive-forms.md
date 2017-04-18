@@ -322,5 +322,117 @@ Wrap the address with div and add a `formGroupName` directive to bind the addres
 <p>Name value: {{ heroForm.get('name').value }}</p>
 ```
 
-
 ![](/images/2017-04-18-01-10-56.jpg)
+
+## Populate the form model with setValue and patchValue
+> Previously you created a control and initialized its value at the same time. You can also `initialize or reset the values` later with the setValue and patchValue methods.
+
+### form.setValue
+
+When using `form.setValue`, it will assign `every` control as once. It will check the parameter's structure and return helpful error message. 
+
+But the `patchValue` will fail silently.
+
+### form.patchValue
+
+With patchValue you can assign specified control's value with an object of key/value pairs.
+
+### When to set form model values (ngOnChanges)
+
+As if the form is editing a hero which is an input property that binded by the parent component. When the parent component have changed the value, the `formGroup` need to be updated by `setValue` method inside `ngOnChanges()` hook.
+
+### We can `reset` the form's status and value with `formGroup.reset()` method.
+
+The reset method accepts an `optional` state parameter that specify the state to be set. It will use `setValue` method to change state and controls.
+
+```ts
+ngOnChanges() {
+  this.heroForm.reset({
+    name: this.hero.name,
+    address: this.hero.addresses[0] || new Address()
+  });
+}
+```
+
+## Use FormArray to present an array of FormGroups
+
+FormGroup and FormControl only hold fixed number of properties.
+FormArray supports an arbitrary number of controls or groups.
+
+A hero can have many lairs.
+### Change the formGroup from address to secret lairs
+
+```ts
+this.heroForm = this.fb.group({
+  name: ['', Validators.required],
+  secretLairs: this.fb.array([])
+});
+```
+- Changing the `form model's property name` is an important point: the form model doesn't have to match the data model.
+
+### Set the secretLaires
+
+```ts
+const addresses = [
+  {street: '123 Main',  city: 'Anywhere', state: 'CA',  zip: '94801'},
+  {street: '456 Maple', city: 'Somewhere', state: 'VA', zip: '23226'},
+];
+
+// map model array to FormGroup array.
+const addressesGroups = addresses.map(address => this.fb.group(address));
+
+// create FormArray by build method and FormGroup[]
+const addressFormArray = this.fb.array(addressesGroups);
+
+// override the controller with setControl
+this.heroForm.setControl('secretLairs', addressFormArray);
+```
+
+- Notice that setControl method will override the control, instead of setValue method which will update the control's value.
+- Notice also that the secretLairs FormArray contains FormGroups, not Addresses.
+
+### Displaying the FormArray
+
+```html
+  <div formArrayName="secretLairs" class="well well-lg">
+    <div *ngFor="let address of secretLairs.controls; let i=index" [formGroupName]="i" >
+      <!-- The repeated address template -->
+    </div>
+  </div>
+```
+
+- With `formArrayName` directive.
+- `secretLairs` access in *ngFor directive will call a getter method.
+
+```ts
+  get secretLairs() {
+    return this.heroForm.get('secretLairs') as FormArray;
+  }
+```
+- `formGroupName` in the loop bind to the index in the array.
+
+
+### When adding a new address, we need to push a FormGroup object.
+
+```ts
+addLair() {
+  this.secretLairs.push(this.fb.group(new Address()));
+}
+```
+
+## Observe control changes
+
+Angular calls ngOnChanges when the input hero is changed, but Angular does not call it when the hero's property is changed.
+
+We can learn about those changes with subscribing to one of the form control.
+
+```ts
+nameChangeLog: string[] = [];
+logNameChange() {
+  const nameControl = this.heroForm.get('name');
+  nameControl.valueChanges.forEach(
+    (value: string) => this.nameChangeLog.push(value)
+  );
+}
+```
+
