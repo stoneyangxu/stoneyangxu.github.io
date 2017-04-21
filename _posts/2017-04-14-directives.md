@@ -180,6 +180,16 @@ The asterisk is "syntactic sugar"
 </script>
 ```
 
+## HostBinding
+
+Bind the property of the host element.
+Using a get function to update the HostBinding value when Input value changed.
+
+```ts
+  @Input() myCollaspe = false;
+  @HostBinding('class.show') get showClass() { return !this.myCollaspe; }
+```
+
 ## TemplateRef, ViewContainerRef and EmbeddedViewRef
 ### Results in browser when using structural directive
 
