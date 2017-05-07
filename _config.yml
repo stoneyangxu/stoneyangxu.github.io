@@ -3,7 +3,7 @@
 title: StoneYang's Blog
 locale: zh_CN
 description: 记录学习中的点点滴滴
-logo: site-logo.png
+# logo: site-logo.png
 search: true
 url: https://stoneyangxu.github.io
 
@@ -37,7 +37,7 @@ exclude: ["lib", "config.rb", "Capfile", "config", "log", "Rakefile", "Rakefile.
 # Site owner
 owner:
   name: 杨旭
-  avatar: bio-photo.jpg
+  avatar: bio-photo.png
   email: stoneyangxu@icloud.com
   disqus-shortname:
   twitter: #username
