@@ -73,7 +73,8 @@ var ifr = $('<iframe>', {src: 'http://b.a.com/bar'});
 $('body').append(ifr);                  // 发送HTTP请求
 ```
 ## JSONP
-<script>请求是可以跨域的，在url中加入一个回调函数的名称，客户端返回数据后自动调用回调函数，数据作为参数传入回调函数中。
+
+script标签的请求是可以跨域的，在url中加入一个回调函数的名称，客户端返回数据后自动调用回调函数，数据作为参数传入回调函数中。
 
 ```js
 var callback = function(data){
