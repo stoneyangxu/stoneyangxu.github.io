@@ -2,7 +2,7 @@
 layout: post
 title:  "读书笔记：重构——改善既有代码设计（一）"
 date:   2017-09-06 02:21:45
-categories: 反思
+categories: 读书笔记
 ---
 
 # 重构
