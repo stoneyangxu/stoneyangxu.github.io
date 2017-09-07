@@ -222,3 +222,172 @@ Value Object 的优势是不可变，在分布式系统和并发系统中非常�
 
 ## Replace Subclass with Fields
 如果subclass的差别只是常量数据，销毁subclass，将数据作为值域
+
+
+# 简化条件表达式
+
+## Decompose Conditional
+
+有一个复杂的条件表达式，从if／then／else中分别提取为独立函数。
+
+复杂的条件逻辑是最常导致复杂度上升的地点之一
+
+## Consolidate Conditional Expression （合并条件表达式）
+有一系列分支拥有相同的结果，将分支进行合并，将条件表达式提取为函数。
+
+*注意：这些表达式没有副作用*
+
+## Consolidate Duplicate Conditional Fragments
+多个条件分支拥有相同的代码，提取到if/else之外；让代码清晰表达哪些代码改变，哪些不变
+
+## Remove Control Flag（移除控制标记）
+使用break或return取代控制标记
+
+## Replace Nested Conditional with Guard Clauses
+
+条件逻辑难以看清正常的执行路径，使用卫语句表现特殊情况。
+
+*条件分支中，只有一条正确路径，其他都是不常见路径*
+
+## Replace Conditional with Polymorphim
+条件式中，根据不同的对象类别提供不同的行为；将每个分支放入subclass中，将原始函数声明为抽象函数。
+
+利用现有的或新建继承结构
+
+## Introduce Null Object
+
+将null value替换为null object，避免再三检查对象是否为null。
+
+
+## Introduce Assertion
+以断言明确表示某种假设
+
+# 简化函数调用
+
+## Rename Mthod
+以便更好的表达意图。
+
+## Add Parameter
+某个函数需要从调用端得到更多信息，为此函数添加*对象参数*，让对象带进所需信息。
+
+## Rename Parameter
+删除不再需要的参数
+
+## Separate Query from Modifier
+如果某个函数既返回状态值，又修改对象状态；将其分隔为两个函数，完成各自的职责。
+
+## Parameterize Method
+若干函数做了类似的工作，但是在函数本体中包含了不同的值；建立单一函数，以参数表达不同的值；以此去除重复代码并提高灵活性。
+
+## Replace Parameter with Explicit Methods
+函数内部的行为完全取决于不同的参数值；将其分离为意图明确的不同函数。
+
+## Preserve Whole Object
+如果从对象中取出若干值，将他们作为某一次函数调用时的参数。
+
+该用对象作为参数，当增加或者减少参数时，可以在对象和函数内部处理，避免散弹式修改。
+
+*手法：先传入整个对象，修改引用后移除值参数*
+
+## Replace Parameter with Method
+对象调用某个函数，并将结果作为参数，传递给另一个函数。而接受该参数的函数也可以调用前一个函数。
+
+让参数接受者去除该项参数，并直接调用前一个函数。
+
+## 引入参数对象
+
+某些参数总是成组出现，将其提取为一个参数对象。
+
+*手法：新增对象后，先传入对象，再修改引用，然后在删除值参数*
+
+## Remove Setting Method
+移除无用的set函数
+
+## Hide Method
+没有外部使用的方法，修改为private
+
+## Replace Constructor with Factory Method
+
+如果希望在构造对象时，不仅仅是对他做简单的构造动作；使用工厂函数代替构造函数
+*结合状态码进行多态创建*
+
+## Encapsulate Downcase
+如果需要进行向下转型动作，将向下转型动作隐藏在函数内，减少向下转型带来的负面影响。
+
+## Replace Error Code with Exception
+避免使用错误码表达异常。调用者在发现异常时，可能并不知道如何处理，不如采用异常将错误信息传递上去。
+
+## Replace Exception with Test
+面对一个调用者可以预先加以检查的异常，使调用者在调用函数之前进行检查。
+
+异常只是罕见的、难以预料的情况，不应该成为条件检查的替代品。
+
+# 处理概括关系
+
+## Pull Up Field
+两个子类拥有相同值域，提取到父类
+
+## Pull Up Method
+将子类中重复的方法提取到父类
+
+## Pull Up Constructor Body
+子类中的构造函数基本一致，提取到父类
+
+## Pull Down Method
+父类中某个方法只于部分子类有关，下沉到相关到子类中
+
+## Pull Down Field
+父类中某些值，只被部分子类用到，将其下沉到相关子类中
+
+## Extract Subclass
+class中某些特性只被部分子类用到，提炼一个子类。
+
+## Extract Superclass
+两个类有相似特性，为两个类建立一个父类，相同特性进行提取
+
+## Extract Interface
+若干客户使用class接口中的同一子类，或者有相同的接口
+提取为一个独立的接口，使系统的用法更清晰，同时也更容易看清楚系统的责任划分。
+
+## Collapse Hierarchy
+父类与子类无太大区别，合并为一体。
+
+避免继承带来的复杂度。
+
+## Form Template Method
+子类中的执行顺序相同，只是其中某些步骤不同。
+将差异过程提取为函数，将公共部分上移到父类。
+
+## Replace Inheritance with Delegation
+
+父类只使用子类的部分接口，或者根本不需要继承来的数据。
+使用组合代替继承。
+
+## Replace Delegation with Inheritance
+委托关系过多时，使用继承代替委托
+
+# 大型重构
+
+## Tease Apart Inheritance 梳理并分解继承体系
+某个继承体系承担了多项职责，分离为多个，使用委托关联。
+
+## Convert Procedural Design to Objects
+将数据记录变成对象，将行为分开，并将行为移动到对象内。
+
+## Separate Domain from Presentation
+将业务逻辑与展现分离，建立独立的业务类。
+
+## Extract Hierarchy
+某个类承担过多职责，通过继承体系分隔子类的特殊情况
+
+# 安全重构
+- 相信你的编码功力
+- 相信你的编译器能捕捉遗漏的错误
+- 相信测试可以捕捉你和编译器遗漏的错误
+- 相信代码审核
+
+
+![](/images/2017-09-07-23-50-41.jpg)
+
+
+![](/images/2017-09-07-23-50-57.jpg)
