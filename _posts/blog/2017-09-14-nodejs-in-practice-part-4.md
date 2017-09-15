@@ -5,7 +5,7 @@ date:   2017-09-14 23:37:54
 categories: 读书笔记
 ---
 
-> Node.js硬实战 - 网络
+> 网络：Node世界真正的“Hello World”
 
 - - - - -
 # 第七章 网络：Node真正的“Hello World”

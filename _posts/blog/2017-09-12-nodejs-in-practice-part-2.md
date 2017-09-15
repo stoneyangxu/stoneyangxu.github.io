@@ -5,7 +5,9 @@ date:   2017-09-12 23:58:31
 categories: 读书笔记
 ---
 
-> Node.js硬实战 - Buffers & EventEmitter & Stream
+> Buffer：使用比特、字节以及编码
+> Events：玩转EventEmitter
+> 流：最强大和最容易误用的功能
 
 - - - - -
 # 第三章 Buffers 使用比特、字节以及编码
