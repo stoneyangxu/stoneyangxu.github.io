@@ -534,5 +534,181 @@ http.createServer((req, res) => {
 
 ![](/images/2017-09-15-02-14-13.jpg)
 
-- - - - -
-未完待续……
+## 创建DNS请求
+
+- dns.lookup 提供更友好的API
+- dns.resolve 使用更快的库
+
+```js
+const dns = require('dns')
+
+console.time('lookup')
+
+dns.lookup('www.manning.com', (err, address) => {
+    if (err) console.log(err)
+
+    console.log(address)
+    console.timeEnd('lookup')
+})
+
+console.time('resolve')
+dns.resolve('www.manning.com', (err, address) => {
+    if (err) console.log(err)
+
+    console.log(address)
+    console.timeEnd('resolve')
+})
+```
+
+
+![](/images/2017-09-15-23-54-53.jpg)
+
+## 加密
+
+- 加密模块tls， 使用OpenSSL安全传输层套接字（TLS/SSL）
+- 每个客户端和服务端都拥有一个*私钥*，服务器可以使用*公钥*
+### 一个加密都TCP服务器
+
+- 使用tls模块开启一个客户端和服务端，使用openssl创立所需要的证书文件
+- 公钥加密依赖于*公钥-私钥对*，以及一个附加的*证书验证公钥（CA）*
+- 使用openssl命令行工具生成所需的文件
+    - genrsa - 生成一个RSA证书，这是我们的私钥
+    - req - 创建一个CASR
+    - x509 - 使用CSR产生一个公钥签署的私钥
+```shell
+$ openssl genrsa -out server.pem 1024 # 使用1024比特创建服务器的私钥
+$ openssl req -new -key server.pem -out server-csr.pem # 创建CSR， 需要输入主机名（Common Name），通过hostname查询
+$ openssl x509 -req -in server-csr.pem -signkey server.pem -out server-cert.pem # 签发服务器私钥
+
+$ openssl genrsa -out client.pem 1024 # 创建客户端私钥
+$ openssl req -new -key client.pem -out client-csr.pem # 创建客户端CSR， 需要输入主机名（Common Name），通过hostname查询
+$ openssl x509 -req -in client-csr.pem -signkey client.pem -out client-cert.pem # 签发客户端私钥，然后输出一个公钥
+```
+
+- 创建使用tls加密的服务器：
+
+```js
+const fs = require('fs')
+const tls = require('tls')
+
+const options = {
+    key: fs.readFileSync('server.pem'), // 服务端私钥
+    cert: fs.readFileSync('server-cert.pem'), // 公钥
+    ca: [fs.readFileSync('client-cert.pem')], // 客户端验证证书
+    requestCert: true, // 确保服务端和客户端都要检查
+}
+
+const server = tls.createServer(options, (clearTextStream) => {
+    const authorized = clearTextStream.authorized ? 'authorized': 'unauthorized'
+
+    console.log('Connected: ', authorized) // 展示服务器是否能够验证证书
+
+    clearTextStream.write('Welcome!\n')
+    clearTextStream.setEncoding('utf8')
+    clearTextStream.pipe(clearTextStream)
+})
+
+server.listen(8080, () => {
+    console.log('Server listening...')
+})
+```
+
+- 一个使用tls加密的tcp客户端
+
+```js
+const fs = require('fs')
+const os = require('os')
+const tls = require('tls')
+
+const options = {
+    key: fs.readFileSync('client.pem'), // 服务端私钥
+    cert: fs.readFileSync('client-cert.pem'), // 公钥
+    ca: [fs.readFileSync('server-cert.pem')], // 服务端验证证书
+    servername: os.hostname() // 把主机名作为服务器名称
+}
+
+const clearTextStream = tls.connect(8080, options, () => {
+    const authorized = clearTextStream.authorized ? 'authorized': 'unauthorized'
+
+    console.log('Connected: ', authorized)
+
+    process.stdin.pipe(clearTextStream)
+})
+
+clearTextStream.setEncoding('utf8')
+clearTextStream.on('data', (data) => {
+    console.log(data)
+})
+```
+
+### 加密的web服务器和客户端
+
+使用*https模块*和*https.createServer*
+
+- 服务端
+```js
+const fs = require('fs')
+const https = require('https')
+
+
+const options = {
+    key: fs.readFileSync('server.pem'), // 服务端私钥
+    cert: fs.readFileSync('server-cert.pem'), // 公钥
+    ca: [fs.readFileSync('client-cert.pem')], // 客户端验证证书
+    requestCert: true, // 确保服务端和客户端都要检查
+}
+
+const server = https.createServer(options, (req, res) => {
+    const authorized = req.authorized ? 'authorized': 'unauthorized'
+
+    console.log('Connected: ', authorized) // 展示服务器是否能够验证证书
+
+    res.writeHead(200)
+    res.write(`Welcome! You are ${authorized} \n`)
+    res.end()
+})
+
+server.listen(8080, () => {
+    console.log('Server listening...')
+})
+```
+
+
+![](/images/2017-09-16-00-25-20.jpg)
+
+- 客户端
+
+```js
+const fs = require('fs')
+const https = require('https')
+const os = require('os')
+
+const options = {
+    key: fs.readFileSync('client.pem'), // 服务端私钥
+    cert: fs.readFileSync('client-cert.pem'), // 公钥
+    ca: [fs.readFileSync('server-cert.pem')], // 客户端验证证书
+    hostname: os.hostname(),
+    port: 8080,
+    path: '/',
+    method: 'GET'
+}
+
+const req = https.request(options, (res) => {
+    res.on('data', (d) => {
+        process.stdout.write(d)
+    })
+})
+
+req.end()
+
+req.on('error', (e) => {
+    console.error(e)
+})
+
+```
+
+
+![](/images/2017-09-16-00-30-08.jpg)
+
+- 使用浏览器访问时，由于未加载证书，提示未认证
+- 使用自定义的客户端请求时，提示为已加载
