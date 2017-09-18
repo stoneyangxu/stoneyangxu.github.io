@@ -263,7 +263,7 @@ categories: HTML5
 
 ![](/images/2017-09-18-00-16-29.jpg)
 
-- *鼠标悬浮时，设置拖拽的操作类型，必须处于effectAllowed列表中，否则不会触发drop事件*
+- *鼠标悬浮时，必须屏蔽浏览器默认操作（event.preventDefault），否则不会触发drop事件；浏览器默认禁止将可拖拽元素放置到其他元素内*
 
 ```js
     /*
