@@ -138,6 +138,7 @@ window.addEventListener('message',function(event) {
 });
 ```
 - iframe使用场景
+
 ```js
 //捕获iframe
 var domain = 'http://scriptandstyle.com';
