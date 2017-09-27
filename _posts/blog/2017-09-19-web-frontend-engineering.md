@@ -185,6 +185,7 @@ $ yarn add gulp-eslint --dev
 ```
 
 - 创建*gulpfile.js*文件，加入eslint任务
+
 ```js
 const eslint = require('gulp-eslint')
 const gulp = require('gulp')
