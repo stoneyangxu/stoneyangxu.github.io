@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "《打造FaceBook》"
+title:  "《打造Facebook》"
 date:   2017-10-08 16:13:11
 categories: 读书笔记
 ---
