@@ -499,3 +499,7 @@ Map<Boolean, List<Dish>> partitioned = menu.stream().collect(partitioningBy(Dish
 Map<Boolean, Map<Dish.Type, List<Dish>>> partitioned = menu.stream()
     .collect(partitioningBy(Dish::isVegetarian, groupingBy(Dish::getType)));
 ```
+
+### 收集器接口
+
+Collector中包含了一系列的方法
