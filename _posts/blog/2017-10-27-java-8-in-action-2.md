@@ -248,7 +248,7 @@ Optional<Transaction> minTransaction = transactions.stream()
 
 #### 原始类型流特化
 
-IntStream, DoubleStream和LongStream, 避免了暗含的装箱成本. 几个接口都带来了常用的*数值规约*方法
+IntStream, DoubleStream和LongStream, 避免了暗含的装箱成本. 几个接口都带来了常用的*数值归约*方法
 
 特化的原因在于装箱带来的成本, 即int和Integer之间的*效率差异*
 
@@ -384,7 +384,7 @@ Map<Currency, List<Transaction>> transactionsByCurrencies = transactions.stream(
 
 ### 收集器
 
-收集器中的实现, 决定了如何对流进行规约操作.
+收集器中的实现, 决定了如何对流进行归约操作.
 
 使用收集器能够更好的*复用和重用*
 
@@ -392,7 +392,7 @@ Map<Currency, List<Transaction>> transactionsByCurrencies = transactions.stream(
 
 收集器主要包含三大功能:
 
-- 将流元素规约和汇总为一个值
+- 将流元素归约和汇总为一个值
 - 元素分组
 - 元素分区
 
@@ -502,9 +502,9 @@ Map<Boolean, Map<Dish.Type, List<Dish>>> partitioned = menu.stream()
 
 ### 收集器接口
 
-Collector中包含了一系列的方法, 为进行具体的规约操作提供了范本.
+Collector中包含了一系列的方法, 为进行具体的归约操作提供了范本.
 
-同样的, 可以为Collector接口提供自定义的实现, 创建自己的规约操作.
+同样的, 可以为Collector接口提供自定义的实现, 创建自己的归约操作.
 
 ```java
 public interface Collector<T, A, R> {
@@ -540,7 +540,7 @@ public Supplier<List<T>> supplier() {
 }
 ```
 
-- BiConsumer<A, T> accumulator(); 将元素添加到结果容器, 执行过程中会有两个参数: 当执行到第n个元素的时候, 得到规约结果的`累加器`和`当前元素`
+- BiConsumer<A, T> accumulator(); 将元素添加到结果容器, 执行过程中会有两个参数: 当执行到第n个元素的时候, 得到归约结果的`累加器`和`当前元素`
 
 ```java
 @Override
@@ -549,4 +549,78 @@ public BiConsumer<List<T>, T> accumulator() {
 }
 ```
 
-- 
+- Function<A, R> finisher(); 对结果容器进行最终转换, 返回一个累加过程的最后要调用的函数, 将累加器对象转换为整个集合操作的最终结果
+
+```java
+@Override
+public Function<List<T>, List<T>> finisher() {
+    return i -> i;
+}
+```
+
+- BinaryOperator<A> combiner(); 合并两个结果容器, 提供一个进行归约操作的函数, 当流进行并行处理时, 各个子部分的累加器如何合并
+
+```java
+@Override
+public BinaryOperator<List<T>> combiner() {
+    return (list1, list2) -> {
+        list1.addAll(list2);
+        return list1;
+    };
+}
+```
+
+- Set<Characteristics> characteristics(); 返回一个不可变的Characteristics集合, 定义了收集器的行为: 流是否可以进行归并操作, 以及可以使用哪些优化
+
+    - CONCURRENT 累加操作可以并行执行, 收集器可以并行归约流, 如果收集器没有标记为UNORDERED, 则只能在无序流上进行并行归约
+    - UNORDERED 归约结果不受流中项目的遍历和累计顺序的影响
+    - IDENTITY_FINISH 表明完成器方法返回的函数是恒等函数, 可以跳过. 这种情况下, 累加器对象会直接用作归约过程的最终结果
+
+```java
+@Override
+public Set<Characteristics> characteristics() {
+    return Collections.unmodifiableSet(EnumSet.of(IDENTITY_FINISH, CONCURRENT));
+}
+```
+
+#### 进行自定义收集而不去实现Collector
+
+对于IDENTITY_FINISH的收集操作, collect方法接受三个参数:
+
+- 供应源 
+- 累加器
+- 组合器
+
+```java
+menu.stream().collect(
+    ArrayList::new,
+    List::add,
+    List::addAll
+);
+```
+
+### 总结
+
+- collect是一个终端操作, 接受的参数是将流中的元素累计到汇总结果的各种方式
+- 预定义收集器可以进行归约, 汇总, 分组等操作
+- 可以将多个收集器进行组合复用, 进行多级分组, 分区和归约
+- 可以实现Collector接口中定义的方法实现自定义收集器
+
+## 并行数据处理与性能
+
+使用Stream流可以简单的将数据集操作转换为`声明式`并行操作
+
+并行流会被划分为多块执行, 而划分的`方式`往往会导致问题.
+
+### 并行流
+
+并行流就是通过parallelStream方法将一个流分割为多块, 在每个线程中处理各个分块的数据, 充分利用多核CPU的计算能力
+
+#### 将顺序流转换为并行流
+
+```java
+public static long parallelSum(long n) {
+    return Stream.iterate(1L, i -> i + 1).limit(n).parallel().reduce(Long::sum).get();
+}
+```
+
