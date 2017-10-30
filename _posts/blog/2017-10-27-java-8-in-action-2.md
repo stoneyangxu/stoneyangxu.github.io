@@ -502,4 +502,9 @@ Map<Boolean, Map<Dish.Type, List<Dish>>> partitioned = menu.stream()
 
 ### 收集器接口
 
-Collector中包含了一系列的方法
+Collector中包含了一系列的方法, 为进行具体的规约操作提供了范本.
+
+同样的, 可以为Collector接口提供自定义的实现, 创建自己的规约操作.
+
+```java
+```
