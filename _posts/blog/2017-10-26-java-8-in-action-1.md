@@ -1,3 +1,9 @@
+---
+layout: post
+title:  "JAVA8实战 - 基础知识"
+date:   2017-10-26 22:47:37
+categories: 读书笔记
+---
 
 # 概要
 
