@@ -507,4 +507,46 @@ Collector中包含了一系列的方法, 为进行具体的规约操作提供了
 同样的, 可以为Collector接口提供自定义的实现, 创建自己的规约操作.
 
 ```java
+public interface Collector<T, A, R> {
+
+    Supplier<A> supplier();
+    BiConsumer<A, T> accumulator();
+    BinaryOperator<A> combiner();
+    Function<A, R> finisher();
+    Set<Characteristics> characteristics();
+}
 ```
+
+#### 类型定义
+
+- T 是流中要收集的项目的泛型
+- A 是累加器的类型, 累加器是在收集过程中用于收集累加结果的对象
+- R 是收集得到的结果对象的类型
+
+例如:
+
+```java
+public class ToListCollector<T> implements Collector<T, List<T>, List<T>>
+```
+
+#### 接口中的方法
+
+- Supplier<A> supplier(); 建立新的结果容器
+
+```java
+@Override
+public Supplier<List<T>> supplier() {
+    return () -> new ArrayList<T>();
+}
+```
+
+- BiConsumer<A, T> accumulator(); 将元素添加到结果容器, 执行过程中会有两个参数: 当执行到第n个元素的时候, 得到规约结果的`累加器`和`当前元素`
+
+```java
+@Override
+public BiConsumer<List<T>, T> accumulator() {
+    return (list, item) -> list.add(item);
+}
+```
+
+- 
