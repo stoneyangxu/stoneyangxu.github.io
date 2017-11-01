@@ -624,3 +624,118 @@ public static long parallelSum(long n) {
 }
 ```
 
+并行执行意味着顺序的不确定性: 
+
+```java
+Stream.iterate(1, i -> i + 1).limit(9).parallel().forEach(System.out::print);
+// output: 623418759
+```
+在并行流内部是利用ForkJoinPool执行, 默认的线程数量就是处理器数量.
+
+并不是所有的并行流都能带来性能提升, 比如:
+
+```java
+
+    public static long iterativeSum(long n) {
+        long result = 0;
+        for (long i = 0; i <= n; i++) {
+            result += i;
+        }
+        return result;
+    }
+
+    public static long sequentialSum(long n) {
+        return Stream.iterate(1L, i -> i + 1).limit(n).reduce(Long::sum).get();
+    }
+
+    public static void main(String[] args) {
+        System.out.println("Iterative Sum done in: " + measurePerf(ParallelStreams::iterativeSum, 10_000_000L) + " msecs");
+        System.out.println("Sequential Sum done in: " + measurePerf(ParallelStreams::sequentialSum, 10_000_000L) + " msecs");
+    }
+
+    public static <T, R> long measurePerf(Function<T, R> f, T input) {
+        long fastest = Long.MAX_VALUE;
+        for (int i = 0; i < 10; i++) {
+            long start = System.nanoTime();
+            R result = f.apply(input);
+            long duration = (System.nanoTime() - start) / 1_000_000;
+            if (duration < fastest) fastest = duration;
+        }
+        return fastest;
+    }
+```
+
+执行结果:
+
+```
+Iterative Sum done in: 5 msecs
+Sequential Sum done in: 148 msecs
+```
+
+第二个方法要慢很多, 原因在于:
+
+- 方法内部的装箱, 拆箱操作消耗性能
+- iterate每次执行都需要依赖前一次的执行结果, 很难真正拆分为独立的小块
+
+如果使用其他API来避免拆箱和装箱操作, 性能会得到很大提升, 这说明合适的`数据结构`可以很大的影响到执行效率: 
+
+```java
+    public static long rangedSum(long n) {
+        return LongStream.rangeClosed(1, n).reduce(Long::sum).getAsLong();
+    }
+    
+    System.out.println("Range forkJoinSum done in: " + measurePerf(ParallelStreams::rangedSum, 10_000_000L) + " msecs");
+
+    // output: Range forkJoinSum done in: 14 msecs
+```
+
+#### 正确的使用并行流
+
+错用并行流的首要原因是算法改变了某些`共享状态`
+
+```java
+    public static class Accumulator {
+        private long total = 0;
+
+        public void add(long value) {
+            total += value;
+        }
+    }
+    public static long sideEffectParallelSum(long n) {
+        Accumulator accumulator = new Accumulator();
+        LongStream.rangeClosed(1, n).parallel().forEach(accumulator::add);
+        return accumulator.total;
+    }
+```
+
+上述代码进行累加操作, 但是每次执行的结果都不相同, 原因在于forEach过程中, 始终在`竞争`total这个共享状态
+
+```
+Result: 24126846328568
+Result: 18359895440871
+Result: 19559025945863
+Result: 20770663312463
+Result: 26318400284968
+Result: 17731221333150
+Result: 15349897897796
+Result: 28819573961056
+Result: 26025413522058
+Result: 20379630589112
+```
+
+#### 高效使用并行流
+
+- 如果有疑问, `测量`
+- 留意`装箱` - 使用原始类型流来避免这种操作
+- 有些操作本身在并行流上的操作就更慢, 比如findFirst和limit
+- 考虑流的操作流水线的总计算成本, 单个元素的计算成本越高, 则并行流性能好的可能性越大
+- 对于数据量较少的流, 不适合并行流
+- 考虑流背后的数据结构是否易于拆解, 比如ArrayList就要比LinkedList更容易拆解, 因为前者不需要遍历就可以平均拆分; 使用range工厂创建的原始类型流也更容易拆解.
+- 流自身的特点, 以及流水线中的中间操作修改流的方式
+- 考虑终端操作中合并步骤的成本
+
+### 分支/合并框架
+
+分支/合并框架的目的是以`递归`的方式将可以并行的任务拆分为更小的任务, 然后将每个子任务的结果合并起来生成整体结果.
+
+它是ExecutorService接口的一个实现
