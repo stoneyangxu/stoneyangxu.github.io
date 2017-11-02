@@ -738,4 +738,214 @@ Result: 20379630589112
 
 分支/合并框架的目的是以`递归`的方式将可以并行的任务拆分为更小的任务, 然后将每个子任务的结果合并起来生成整体结果.
 
-它是ExecutorService接口的一个实现
+它是ExecutorService接口的一个实现, 把任务分配给线程池中的工作线程.
+
+#### 使用RecursiveTask
+
+要把任务提交到这个池, 必须创建RecursiveTask<T>的一个子类, 其中R是并行化任务(以及所有子任务)产生的**结果类型**
+
+```java
+public class ForkJoinSum extends RecursiveTask<Long> {
+    @Override
+    protected Long compute() {
+        return null;
+    }
+}
+```
+compute是唯一需要实现的方法, 当中包含**任务拆分逻辑**, 以及无法拆分之后的**单个子任务计算逻辑**
+
+
+![](/images/2017-11-02-23-07-06.jpg)
+
+
+```java
+
+public class ForkJoinSum extends RecursiveTask<Long> {
+
+    private static final long THRESHOLD = 10_000;
+
+    // 要求和的数组
+    private final long[] numbers;
+    private final int start;
+    private final int end;
+
+    public ForkJoinSum(long[] numbers) {
+        this(numbers, 0, numbers.length);
+    }
+
+    private ForkJoinSum(long[] numbers, int start, int end) {
+        this.numbers = numbers;
+        this.start = 0;
+        this.end = numbers.length;
+    }
+
+    @Override
+    protected Long compute() {
+
+        int length = end - start;
+
+        // 小于拆分阈值时, 执行顺序计算
+        if (length <= THRESHOLD) {
+            return computeSequentially();
+        }
+        
+        // 拆分任务
+        ForkJoinSum leftTask = new ForkJoinSum(numbers, start, start + length / 2);
+        // 异步执行新创建的子任务
+        leftTask.fork();
+
+        // 创建任务为后一半数组求和
+        ForkJoinSum rightTask = new ForkJoinSum(numbers, start + length / 2, end);
+        
+        // 同步执行第二部分任务
+        Long rightResult = rightTask.compute();
+        
+        // 获取第一个子任务的结果
+        Long leftResult = leftTask.join();
+        
+        return leftResult + rightResult;
+    }
+
+    private long computeSequentially() {
+        long sum = 0;
+        for (int i = start; i < end; i++) {
+            sum += numbers[i];
+        }
+
+        return sum;
+    }
+}
+```
+
+使用的时候:
+
+```java
+long[] numbers = LongStream.rangeClosed(1, n).toArray();
+ForkJoinTask<Long> task = new ForkJoinSumCalculator(numbers);
+return new ForkJoinPool().invoke(task);
+```
+
+#### 使用Fork/Join框架的最佳做法
+
+- 对一个任务调用join方法会**阻塞调用方**, 直到任务作出结果, 所以要在两个任务都**开始之后**才调用
+- 不应该在RecursiveTask内部使用invoke方法, 应该始终使用**compute和fork**方法, 只有顺序代码才使用invoke来启动并行计算
+- 对子任务调用fork方法可以把它排进ForkJoinPool, 同时调用左右任务的join方法, 效率要**更低**, 因为这样做可以为其中一个子任务**复用当前线程**
+- 因为启动了异步任务, 调试Fork/Join框架会比较困难
+- 和并行流一样, 不应该理所当然的认为并行更快, 可以考虑: 将IO密集型和CPU密集型操作分为不同任务; Fork/Join框架需要"预热"之后才能被JIT编译器优化(性能测试前跑几遍程序);
+- 工作窃取 - Fork/Join框架会使用"工作窃取"技术来分摊多个线程的工作负担, 当线程池中的一个线程处于闲置状态时, 会随机的选择另一个线程, 并从它的工作队列末尾**窃取**一个线程, 以此来达到整体上的平衡.
+
+### Spliterator
+
+Spliterator叫做**可分迭代器**, 和Iterator一样用来遍历数据源, 但是他是为了**并行计算**而设计的
+
+```java
+public interface Spliterator<T> {
+    boolean tryAdvance(Consumer<? super T> action);
+    Spliterator<T> trySplit();
+    long estimateSize();
+    int characteristics();
+}
+```
+
+- tryAdvance 遍历数据源, 并执行action方法, 如果还有其他元素则返回true
+- trySplit 可以把一些元素**划分出去**, 给另一个Spliterator执行, 二者并行执行
+- estimateSize 用来估算剩余元素个数, 有助于均匀划分
+- characteristics 方法返回特性, 代表本身特征集的编码
+    - ORDERED - 元素有既定的顺序, 子任务的遍历和划分也遵循这一顺序
+    - DISTINCT - 元素都是唯一的(equals)
+    - SORTED - 元素按照一个预定义的顺序排序
+    - SIZED - 由一个已知大小的源建立, 所以estimateSize返回的是精确值
+    - NONNULL - 元素不会为null
+    - IMMUTABL - 数据源不能修改, 不能添加, 删除或修改任何元素
+    - CONCURRE - 可以被其他线程同时修改而无需同步
+    - SUBSIZED - 拆分出来的所有自己都是SIZED
+
+#### 拆分过程
+
+拆分的算法是一个**递归过程**, 递归调用trySplit直到他返回null
+
+
+```java
+    class WordCounter {
+        private final int counter;
+        private final boolean lastSpace;
+
+        public WordCounter(int counter, boolean lastSpace) {
+            this.counter = counter;
+            this.lastSpace = lastSpace;
+        }
+
+        public WordCounter accumulate(Character c) {
+            if (Character.isWhitespace(c)) {
+                return lastSpace ? this : new WordCounter(counter, true);
+            } else {
+                return lastSpace ? new WordCounter(counter+1, false) : this;
+            }
+        }
+
+        public WordCounter combine(WordCounter wordCounter) {
+            return new WordCounter(counter + wordCounter.counter, wordCounter.lastSpace);
+        }
+
+        public int getCounter() {
+            return counter;
+        }
+    }
+
+    class WordCounterSpliterator implements Spliterator<Character> {
+
+        private final String string;
+        private int currentChar = 0;
+
+        private WordCounterSpliterator(String string) {
+            this.string = string;
+        }
+
+        @Override
+        public boolean tryAdvance(Consumer<? super Character> action) {
+            // 迭代并执行计算            
+            action.accept(string.charAt(currentChar++)); 
+            return currentChar < string.length();
+        }
+
+        @Override
+        public Spliterator<Character> trySplit() {
+            int currentSize = string.length() - currentChar;
+            
+            // 如果剩余字符小于十个, 不进行拆分
+            if (currentSize < 10) {
+                return null;
+            }
+            for (int splitPos = currentSize / 2 + currentChar; splitPos < string.length(); splitPos++) {
+                if (Character.isWhitespace(string.charAt(splitPos))) {
+                    
+                    // 拆分一个新的Spliterator
+                    Spliterator<Character> spliterator = new WordCounterSpliterator(string.substring(currentChar, splitPos));
+                    currentChar = splitPos;
+                    return spliterator;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public long estimateSize() {
+            return string.length() - currentChar;
+        }
+
+        @Override
+        public int characteristics() {
+            
+            // 累加当前流的特性
+            return ORDERED + SIZED + SUBSIZED + NONNULL + IMMUTABLE;
+        }
+    }
+```
+
+### 总结
+
+- **内部迭代**可以并行的处理一个流, 而无需显示的使用线程
+- 选择并行的时候一定要进行**测量**, 并行执行的效率很可能会违反直觉
+- **使用原始流**而不是一般化的流, 可能比并行或修改算法带来的收益更大
+- Fork/Join框架使用**递归方式**将并行任务拆分为更小的任务, 在**不同线程**上执行并最终将各个任务的结果**合并**
+- Spliterator定义了流**如何拆分**他要遍历的数据
