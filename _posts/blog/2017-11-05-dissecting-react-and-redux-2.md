@@ -267,7 +267,7 @@ this.state = {
 - 回调函数中自行判断是否需要处理该事件, 并操作自身存储的数据, 触发新的事件通知View
 - 新的事件是在组件的生命周期方法中绑定的, 从而获知数据变化并更新显示
 
-#### Flux的优势
+### Flux的优势
 
 在不适用Flux的时候, 数据都**保存在组件内**, 每个组件都需要维护自己的数据, 当应用变得复杂的时候, 这种关联难以维护
 
@@ -279,8 +279,56 @@ Flux中最大的**优势**就是严格的**单向数据流**: 想要改变View, 
 
 MVC框架最大的缺点是**无法禁绝**Model和View之间的通信, 在Flux架构下, Store相当于Model, 而**Store只有get方法而没有set方法**, 想要修改Store就只能派发action, 这种限制**杜绝了混乱的数据流**
 
-#### Flux的不足
+### Flux的不足
 
 1. Store之间的**依赖关系** - 必须使用waitFor来进行控制, **最好的依赖管理是不产生依赖**
 2. 难以进行**服务端渲染** - 服务端渲染输出的不是DOM而是字符串, flux不是设计出来进行服务端渲染的, 想要实现会很困难
-3. Store混杂了逻辑和状态 - 如果需要**动态**替换Store, 就只能**整体替换**, 也就无法保留状态. 在开发时的调试, 或者生产环境下的**动态加载**, 也就是**热加载** 
+3. Store混杂了逻辑和状态 - 如果需要**动态**替换Store, 就只能**整体替换**, 也就无法保留状态. 在开发时的调试, 或者生产环境下的**动态加载**, 也就是**热加载**
+
+## Redux 
+
+如果把Flux看做一个框架**理念**的话, Redux就是Flux的一种**实现**
+
+### Redux的基本原则
+
+- 唯一数据源
+- 保持状态只读
+- 数据改变只能通过纯函数完成
+
+#### 唯一数据源
+
+应用的状态数据保存在**唯一**的一个Store上
+
+分为多个Store保存造成数据冗余或数据一致性的问题, 使用waitFor进行控制则会导致依赖关系, 使得应用变得复杂.
+
+而这个唯一的Store解决了这些问题, 在Store上的状态是一个**树形**, 每个组件只使用树形结构上的一部分数据
+
+#### 保持状态只读
+
+改变状态的方法不是去修改状态上的值, 而是**创建**一个新的状态对象返回给Redux, 由Redux完成新的状态的组装
+
+#### 数据改变只能通过纯函数完成
+
+所谓纯函数就是一个**reducer**, 根据**上一个状态**和**action**规约为新的状态
+
+```js
+reducer(state, action)
+```
+
+函数的返回结果完全由state和action决定, 并且不产生任何副作用, 也不会修改state和action
+
+```js
+function reducer(state, action) => {
+    const {counterCaption} = action;
+    switch(action.type) {
+        case ActionTypes.INCREASE: 
+            return {...state, [counterCaption]: state[counterCaption] + 1};
+        case ActionTypes.DECREASE: 
+            return {...state, [counterCaption]: state[counterCaption] - 1};
+        default: 
+            return state;
+    }
+}
+```
+
+> "如果你愿意限制做事方式的灵活性, 你几乎总会发现可以做的更好"
