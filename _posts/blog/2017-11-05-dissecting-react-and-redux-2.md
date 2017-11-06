@@ -1,0 +1,286 @@
+---
+layout: post
+title:  "<深入浅出React和Redux> - 从Flux到Redux"
+date:   2017-11-06 01:21:34
+categories: 读书笔记
+---
+
+# 从Flux到Redux
+
+针对React自己来管理数据的问题, 将使用Flux或Redux来管理数据
+
+## Flux
+
+Flux是React官方推出的数据管理框架, 如果说React用来替代jQuery, 那么Flux就是用来替换Backbone, Ember等MVC框架的
+
+其核心思想是**单向数据流**
+
+### MVC框架的缺陷
+
+- Model 负责管理数据, 大部分业务逻辑应该位于Model中
+- View 负责渲染用户界面, 应该**避免**在View中包含业务逻辑
+- Controller 负责**接受用户输入**, 并调用Model中的业务逻辑, 把结果交给View进行渲染
+
+
+![](/images/2017-11-06-01-27-45.png)
+
+
+但是, **MVC真的很快就会变得非常复杂**, 不同模块之间复杂的依赖关系, 会导致系统**脆弱而且不可预测**
+
+在实际使用的时候, Model和View很容易形成复杂的调用关系:
+
+
+![](/images/2017-11-06-01-31-17.png)
+
+原因就是View和Model始终存在, 开发者为了**便利**, 往往忽视理想的数据流规则, 直接让两者进行对话, 从而导致了上图中复杂的依赖关系.
+
+Flux就是一个**更严格的数据流控制**
+
+
+![](/images/2017-11-06-01-36-26.png)
+
+- Dispatcher 处理**动作分发**, 维持**Store之间的依赖**
+- Store 负责**存储数据和处理数据相关的逻辑**
+- Action **驱动Dispatcher**的对象
+- View 视图部分, 负责**显示用户界面**
+
+在使用Flux的时候, 每增加一个新的功能, 并不需要新增一个Dispatcher, 只需要**增加一种新的Action类型**, Dispatcher对外的接口并不改变
+
+### Flux应用
+
+首先进行安装:
+
+```shell
+$ yarn add flux
+```
+
+#### Dispatcher
+
+几乎所有应用都只有**一个**Dispatcher
+
+创建AppDispatcher.js声明唯一的对象, 其他代码使用的时候, 只需要**引用**他, 它的作用就是**派发action**
+
+```js
+import { Dispatcher } from 'flux';
+
+export default new Dispatcher();
+```
+
+#### action
+
+表示一个**动作**
+- 一个**纯粹的数据对象**
+- 必须包含一个**type**字段, 代表动作类型, 应该是**字符串类型**
+
+定义action通常需要两个文件:
+
+- 一个定义action的**类型**
+- 一个定义action的**构造函数**
+
+分成两个文件的原因是: Store中会针对不同类型进行不同操作, 会**单独引用类型文件**
+
+在Actions.js中, 借助Dispatcher对象分发不同类型的action
+
+```js
+// ActionTypes.js
+export const INCREASE = 'increase';
+export const DECREASE = 'decrease';
+
+// Actions.js
+import * as ActionTypes from './ActionTypes';
+import AppDispatcher from './AppDispatcher';
+
+export const increase = (caption) => {
+  AppDispatcher.dispatch({
+    type: ActionTypes.INCREASE,
+    caption: caption
+  })
+}
+
+export const decrease = (caption) => {
+  AppDispatcher.dispatch({
+    type: ActionTypes.DECREASE,
+    caption: caption
+  })
+}
+```
+
+#### Store
+
+也是一个对象, 用来**存储应用状态**, 同时**接受Dispatcher派发的动作**, 由此来**决定是否需要更新**应用状态
+
+使用Flux之后会带来一个弊端: **文件数量大大增加**, 所以需要使用单独的stores来存储所有的Store文件
+
+- CounterStore.js
+
+```js
+const counterValues = {
+  'First': 0,
+  'Second': 10,
+  'Thired': 100
+}
+
+const CounterStore = Object.assign({}, EventEmitter.prototype, {
+  getCounterValues: () => {
+    return counterValues
+  },
+  emitChange: () => {
+    this.emit(CHANGE_EVENT)
+  },
+  addChangeListener: (callback) => {
+    this.on(CHANGE_EVENT, callback)
+  },
+  removeChangeListener: (callback) => {
+    this.removeListener(CHANGE_EVENT, callback)
+  }
+})
+```
+
+当Store状态发生变化的时候, 使用**消息**的方式建立Store和View之间的联系, 更新界面状态
+
+理论上, getCounterValues应该返回一个**不可变**对象, 这里只是为了便于演示, 没有引入Immutable
+
+Store只有**注册到Dispatcher**上才能发挥真正的作用
+
+```js
+CounterStore.dispatchToken = AppDispatcher.register((action) => {
+  if (action.type === ActionTypes.INCREASE) {
+    counterValues[action.caption]++;
+    CounterStore.emitChange();
+  } else if (action.type === ActionTypes.DECREASE) {
+    counterValues[action.caption]--;
+    CounterStore.emitChange();
+  }
+})
+```
+
+register函数会返回一个token值, 用来**在store之间的同步**
+
+
+- SummaryStore.js
+
+```js
+
+function computeSummary(counterValues) {
+  let summary = 0
+  for (const key in counterValues) {
+    if (counterValues.hasOwnProperty(key)) {
+      summary += counterValues[key]
+    }
+  }
+
+  return summary
+}
+
+const SummaryStore = Object.assign({}, EventEmitter.prototype, {
+  getSummary: () => {
+    return computeSummary(CounterStore.getCounterValues())
+  }
+})
+```
+SummaryStore虽然叫做Store, 但是他实际上不存储数据, 调用CounterStore获取数据的方法进行计算, 并返回计算结果
+
+```js
+SummaryStore.dispatchToken = AppDispatcher.register((action) => {
+  if (action.type === ActionTypes.INCREASE || action.type === ActionTypes.DECREASE) {
+    AppDispatcher.waitFor([CounterStore.dispatchToken])
+    SummaryStore.emitChange()
+  }
+})
+```
+
+waitFor暗示了回调函数的**执行顺序**, 它会等待指定token对应的回调函数执行后才执行.
+
+register只能声明**当有任何动作派发时,请调用我**, 而不是**让Store只监听某些action**, 当一个动作被派发的时候, Flux会把**所有**注册的回调函数都调用一遍, 由回调函数**自己判断**是否需要处理.
+
+这种设计会让Dispatcher的逻辑**最简化**
+
+#### View
+
+首先, View不一定非要使用React, 可以使用任何UI库
+
+在Flux框架下的React组件需要实现以下几个功能:
+
+- 创建时, 读取Store状态来**初始化**
+- Store上状态变化时, **同步更新**组件状态
+- 如果需要View中更新Store, 只能**派发Action**
+
+
+CounterPanel中, 只保留caption的赋值, 其余的属性都会通过Store来获取: 
+
+```js
+  <div>
+    <ClickCounter caption="First" />
+    <ClickCounter caption="Second" />
+    <ClickCounter caption="Third" />
+
+    <Summary />
+  </div>
+```
+
+ClickCounter中通过Store获取初始数据:
+
+```js
+this.state = {
+  count: CounterStore.getCounterValues()[props.caption]
+}
+```
+
+并且绑定Store的变更事件:
+
+```js
+  onChange() {
+    const newCount = CounterStore.getCounterValues()[this.props.caption];
+    this.setState({count: newCount});
+  }
+
+  componentDidMount() {
+    CounterStore.addChangeListener(this.onChange)
+  }
+
+  componentWillUnmount() {
+    CounterStore.removeChangeListener(this.onChange)
+  }
+```
+
+将+和-按钮的事件切换到helper函数的分发操作:
+
+```js
+  increase() {
+    Actions.increase(this.props.caption)
+  }
+
+  decrease() {
+    Actions.decrease(this.props.caption)
+  }
+```
+
+完整代码参考: 
+
+[stoneyangxu/dissecting-react-and-redux](https://github.com/stoneyangxu/dissecting-react-and-redux/tree/flux)
+
+整体的数据流程:
+
+- 点击View中的按钮, 在increase方法中调用Actions中的函数
+- Actions中的函数调用Dispatcher的方法分发事件
+- Dispatcher广播事件, 并且被CounterStore(或SummaryStore)中register注册的回调获取
+- 回调函数中自行判断是否需要处理该事件, 并操作自身存储的数据, 触发新的事件通知View
+- 新的事件是在组件的生命周期方法中绑定的, 从而获知数据变化并更新显示
+
+#### Flux的优势
+
+在不适用Flux的时候, 数据都**保存在组件内**, 每个组件都需要维护自己的数据, 当应用变得复杂的时候, 这种关联难以维护
+
+在Flux架构下, 组件专注于自身的职责**渲染组件**, 数据都是保存在Store中, 组件只根据**事件**将数据映射为界面.
+
+Flux中最大的**优势**就是严格的**单向数据流**: 想要改变View, 必须通过Store来改变数据状态, 而Store中的数据状态必须通过派发一个action来改变, 这就是**规矩**
+
+在这个规矩之下, 想**追溯**一个应用的逻辑就变得非常容易
+
+MVC框架最大的缺点是**无法禁绝**Model和View之间的通信, 在Flux架构下, Store相当于Model, 而**Store只有get方法而没有set方法**, 想要修改Store就只能派发action, 这种限制**杜绝了混乱的数据流**
+
+#### Flux的不足
+
+1. Store之间的**依赖关系** - 必须使用waitFor来进行控制, **最好的依赖管理是不产生依赖**
+2. 难以进行**服务端渲染** - 服务端渲染输出的不是DOM而是字符串, flux不是设计出来进行服务端渲染的, 想要实现会很困难
+3. Store混杂了逻辑和状态 - 如果需要**动态**替换Store, 就只能**整体替换**, 也就无法保留状态. 在开发时的调试, 或者生产环境下的**动态加载**, 也就是**热加载** 
