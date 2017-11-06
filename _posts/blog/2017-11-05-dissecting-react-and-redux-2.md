@@ -332,3 +332,159 @@ function reducer(state, action) => {
 ```
 
 > "如果你愿意限制做事方式的灵活性, 你几乎总会发现可以做的更好"
+
+### Redux实例
+
+先不借助react-redux组件, 以便我们更好的了解Redux的工作方式
+
+```shell
+$ yarn add redux
+```
+
+ActionTypes.js与Flux版本没有任何区别
+
+```js
+export const INCREASE = 'increase';
+export const DECREASE = 'decrease';
+```
+
+Actions.js则变得不同, flux中是将Dispatcher分发动作, 而在Redux中则是返回一个action对象:
+
+```js
+import * as ActionTypes from './ActionTypes';
+import AppDispatcher from './AppDispatcher';
+
+export const increase = (caption) => {
+  return {
+    type: ActionTypes.INCREASE,
+    caption: caption
+  }
+}
+
+export const decrease = (caption) => {
+  return {
+    type: ActionTypes.DECREASE,
+    caption: caption
+  }
+}
+
+export default {increase, decrease}
+```
+
+在Redux中没有Dispatcher存在, 在flux中其作用是将action对象分发给多个Store, 而Redux中只有一个Store, 所以将其简化为**Store上的dispatch方法**
+
+创建一个全局唯一的Store.js:
+
+```js
+import { createStore } from 'redux'
+import reducer from './Reducer'
+
+const initValues = {
+  'First': 0,
+  'Second': 10,
+  'Third': 100
+}
+
+const store = createStore(reducer, initValues)
+export default store;
+```
+
+在初始值上只记录三个counter组件的值, Summary的值通过计算得出, 原则是: **避免冗余的数据**
+
+创建Reducer.js, 根据action的type字段执行对应的数据操作:
+
+```js
+import * as ActionTypes from './ActionTypes'
+
+export default (state, action) => {
+  const { caption } = action
+
+  switch (action.type) {
+    case ActionTypes.INCREASE:
+      return { ...state, [caption]: state[caption] + 1 }
+    case ActionTypes.DECREASE:
+      return { ...state, [caption]: state[caption] - 1 }
+    default:
+      return state
+  }
+}
+
+```
+
+Redux中将存储state的工作交给框架自身, 让reducer值关心**如何更新state**, 而不关心怎么存
+
+接着是View部分: 
+- 首先的区别是数据来源不同了, 通过唯一的store获取
+- 其次, 通过store对象来订阅事件
+- 更新的时候, 也是通过store对象的dispatch方法来派发动作
+
+```js
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
+import Actions from '../Actions'
+import store from '../Store'
+
+
+class ClickCounter extends Component {
+
+  constructor(props) {
+    super(props);
+
+    this.state = this.getOwnState()
+
+    this.onChange = this.onChange.bind(this);
+    this.increase = this.increase.bind(this);
+    this.decrease = this.decrease.bind(this);
+  }
+
+  getOwnState() {
+    return {
+      value: store.getState()[this.props.caption]
+    }
+  }
+
+  increase() {
+    store.dispatch(Actions.increase(this.props.caption))
+  }
+
+  decrease() {
+    store.dispatch(Actions.decrease(this.props.caption))
+  }
+
+  onChange() {
+    this.setState(this.getOwnState());
+  }
+
+  componentDidMount() {
+    store.subscribe(this.onChange)
+  }
+
+  componentWillUnmount() {
+    store.unsubscribe(this.onChange)
+  }
+
+  render() {
+    const { caption } = this.props;
+    return (
+      <div>
+        <button onClick={this.increase}>+</button>
+        <button onClick={this.decrease}>-</button>
+        <span>{caption} Count: {this.state.value}</span>
+      </div>
+    );
+  }
+}
+
+ClickCounter.propTypes = {
+  caption: PropTypes.string.isRequired,
+  initValue: PropTypes.number,
+  onUpdate: PropTypes.func
+}
+
+ClickCounter.defaultProps = {
+  initValue: 0,
+  onUpdate: f => f // 默认是一个什么都不做的函数
+}
+
+export default ClickCounter;
+```
