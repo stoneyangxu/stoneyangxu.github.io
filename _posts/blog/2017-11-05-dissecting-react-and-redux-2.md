@@ -488,3 +488,238 @@ ClickCounter.defaultProps = {
 
 export default ClickCounter;
 ```
+
+#### 容器组件和傻瓜组件
+
+在Redux框架下, React组件通常要完成两项工作:
+
+- 读取store的状态初始化组件, 监听store的变化刷新组件, 派发action更新store
+- 根据props和state渲染用户界面
+
+根据单一职责原则, 这两个任务是可以拆分的:
+
+- 容器组件 - 负责和Store打交道
+- 展示组件 - 负责渲染界面, 一个**纯函数**, 而且不需要有状态, 即**无状态组件**
+
+```js
+import React from 'react';
+
+// 缩略为一个纯函数
+function Counter({onIncrease, onDecrease, caption, value}) { // 直接在参数位置解构
+  return (
+    <div>
+      <button onClick={onIncrease}>+</button>
+      <button onClick={onDecrease}>-</button>
+      <span>{caption} Count: {value}</span>
+    </div>
+  );
+}
+
+export default Counter;
+
+```
+
+```js
+// container
+
+  render() {
+    const { caption } = this.props;
+    return (
+      <Counter caption={caption}
+        onIncrease={this.increase}
+        onDecrease={this.decrease}
+        value={this.state.value} />
+    );
+  }
+```
+
+#### 组件Context
+
+在上述例子中, 对store的引用使用相对路径:
+
+```js
+import store from '../Store'
+```
+
+当项目规模变大, 路径会变得很长, 而且如果将组件独立发布, 根本无法获知store的位置
+
+最好**只有一个地方导入store**, 就是在React应用的最顶层
+
+当前我们掌握的方式是将store通过props层层传递下来, 这么做的问题就是**每一层都要传递这个props**
+
+React提供了一个叫做**context**的功能, 本质上就是一个所有组件都能访问的上下文环境
+
+首先创建一个Provider, 作为一个通用的**context提供者**:
+
+```js
+import { Component } from 'react'
+import PropTypes from 'prop-types'
+
+class Provider extends Component {
+
+  getChildContext() {
+    return {
+      store: this.props.store
+    }
+  }
+
+  render() {
+    return this.props.children;
+  }
+}
+
+Provider.childContextTypes = {
+  store: PropTypes.object
+}
+
+export default Provider;
+```
+
+- getChildContext 返回的就是代表context的对象
+- children 是一个特殊属性, 表示<Provider></Provider>之间的组件
+- childrenContextTypes 让React认可它是一个context提供者
+- childContextTypes和getChildContext的属性必须匹配
+
+其次, 在顶层组件使用Provider包裹其他组件:
+
+```js
+ReactDOM.render(
+  <Provider store={store}>
+    <App />
+  </Provider>
+  , document.getElementById('root'));
+```
+
+最后, 在底层组件使用store的时候需要进行相应的调整:
+
+- 定义contextTypes, 与context匹配
+
+```js
+CounterContainer.contextTypes = {
+  store: PropTypes.object
+}
+```
+- 构造函数中, 传入context, 并传入父类的构造函数中
+
+```js
+  constructor(props, context) {
+    super(props, context);
+    // ...
+  }
+```
+
+- 所有使用store的地方, 都通过this.context.store来使用
+
+```js
+  getOwnState() {
+    return {
+      value: this.context.store.getState()[this.props.caption]
+    }
+  }
+```
+
+## React-Redux
+
+在上述例子中, 经过**组件拆分**和**提供Context**, 可以找到固定的规律, 使用react-redux库来帮助我们自动完成
+
+```shell
+$ yarn add react-redux
+```
+
+### react-redux提供Provider
+
+react-redux要求的Provider要求store不光是一个object, 必须是包含三个函数的object:
+
+- subscribe
+- dispatch
+- getState
+
+```js
+import { Provider } from 'react-redux';
+
+ReactDOM.render(
+  <Provider store={store}>
+    <App />
+  </Provider>
+  , document.getElementById('root'));
+```
+
+### 使用connect连接容器组件和展示组件
+
+语法格式如下, 作用是将**无状态组件转换为容器组件**
+
+```js
+export default connect(mapStateToProps, mapDispatchToProps)(connect)
+```
+
+- mapStateToProps 将Store上的状态转换为无状态组件的props
+- mapDispatchToProps 将无状态组件的动作转换为派送给Store的动作
+
+```js
+import { connect } from 'react-redux';
+
+function mapStateToProps(state, ownProps) {
+  return {
+    caption: ownProps.caption,
+    value: state[ownProps.caption]
+  }
+}
+
+function mapDispatchToProps(dispatch, ownProps) {
+  return {
+    onIncrease: () => {
+      dispatch(Actions.increase(ownProps.caption))
+    },
+    onDecrease: () => {
+      dispatch(Actions.decrease(ownProps.caption))
+    }
+  }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(Counter);
+```
+
+使用react-redux简化容器后, 可以将容器组件和无状态组件进行合并:
+
+```js
+import React from 'react';
+import { connect } from 'react-redux';
+import Actions from '../Actions'
+
+function Counter({ onIncrease, onDecrease, caption, value }) {
+  return (
+    <div>
+      <button onClick={onIncrease}>+</button>
+      <button onClick={onDecrease}>-</button>
+      <span>{caption} Count: {value}</span>
+    </div>
+  );
+}
+
+function mapStateToProps(state, ownProps) {
+  return {
+    caption: ownProps.caption,
+    value: state[ownProps.caption]
+  }
+}
+
+function mapDispatchToProps(dispatch, ownProps) {
+  return {
+    onIncrease: () => {
+      dispatch(Actions.increase(ownProps.caption))
+    },
+    onDecrease: () => {
+      dispatch(Actions.decrease(ownProps.caption))
+    }
+  }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(Counter);
+```
+
+## 总结
+
+- React的设计思想是: UI=render(data), flux架构很好的遵循了**单向数据流**的原则
+- Flux因为存在多个Store, 导致**数据容易**和**Store之间的依赖**
+- Redux只有唯一的一个Store, 有效的填补了Flux的缺陷
+- react-redux库提供了全局的Provider, store不需要层层传递, 而且通过connect方法简化了容器组件的创建
