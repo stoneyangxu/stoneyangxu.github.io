@@ -467,4 +467,163 @@ const mapDispatchToProps = {
 
 #### filter视图
 
+- filter组件是一个简单的无状态组件
+
+```js
+function Filter() {
+  return (
+    <p>
+      <Link filter={ALL}>{ALL}</Link>
+      <Link filter={COMPLETED}>{COMPLETED}</Link>
+      <Link filter={UNCOMPLETED}>{UNCOMPLETED}</Link>
+    </p>
+  )
+}
+```
+
+- Link组件略微复杂, 作为容器组件获取状态和派发事件
+
+```js
+const Link = ({ active, children, onClick }) => {
+  if (active) {
+    return <b>{children}</b>
+  } else {
+    return <a href="#" className="badge badge-primary" onClick={(e) => {
+      e.preventDefault()
+      onClick()
+    }}>{children}</a>
+  }
+};
+
+function mapStateToProps(state, ownProps) {
+  return {
+    active: state.filter === ownProps.filter
+  }
+}
+
+function mapDispatchToProps(dispatch, ownProps) {
+  return {
+    onClick: () => {
+      dispatch(setFilter(ownProps.filter))
+    }
+  }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(Link);
+```
+
+- 当修改状态树中的filter值之后, todoList根据过滤条件过滤列表
+
+```js
+function filterByCompleteState(todos, filter) {
+  switch (filter) {
+    case FilterTypes.ALL:
+      return todos;
+    case FilterTypes.COMPLETED:
+      return todos.filter(todo => todo.completed)
+    case FilterTypes.UNCOMPLETED:
+      return todos.filter(todo => !todo.completed)
+    default:
+      return todos;
+  }
+}
+
+function mapStateToProps(state = [], ownProps) {
+  return {
+    todos: filterByCompleteState(state.todos, state.filter)
+  }
+}
+```
+
+### 不使用ref
+
+我们在提交表单的时候, 通过ref获取input的真实dom节点, ref的用法**非常脆弱**
+
+React的产生就是**避免操作DOM**, 直接访问DOM很容易产生失控的情况
+
+替代方案是使用组件状态来记录DOM元素的值:
+
+```js
+  onInputChange(e) {
+    this.setState({
+      value: e.target.value
+    })
+  }
+
+  onSubmit(e) {
+    e.preventDefault()
+
+    const value = this.state.value
+    if (!value.trim()) {
+      return
+    }
+
+    this.props.onAdd(value)
+    this.setState({
+      value: ''
+    })
+  }
+
+  render() {
+    return (
+      <div className="row">
+        <form className="form-inline" onSubmit={this.onSubmit}>
+          <input className="col-8 form-control" value={this.state.value} onChange={this.onInputChange} />
+          <button className="col-3 btn btn-primary" type="submit">Add</button>
+        </form>
+      </div>
+    )
+  }
+```
+
+
 ## 开发辅助工具
+
+### Chrome 扩展包
+
+- React Devtools - 可以检视React组件树
+- Redux Devtools - 可以检视Redux数据流, 并且将组件跳到任何一个**历史状态**
+- React Perf - 发现React组件的性能问题(**react v16已经不支持**)
+
+### redux-immutable-state-invariant辅助包
+
+每个reducer都必须是**纯函数**, 不能修改state或action, 负责会让程序**陷入混乱**
+
+虽然这是一个规则, 但是总会被无心破坏, 使用redux-immutable-state-invariant提供的Redux中间件
+
+在每次**派发动作**之后做一个检查, 如果发现违反了规则, 就会给出警告
+
+### 工具应用
+
+对于工具的启用, 需要在Store中修改一些代码, 通过**中间件**来启用扩展功能.
+
+```shell
+$ yarn add redux-immutable-state-invariant --dev
+```
+
+```js
+//Store.js
+import { createStore, combineReducers, applyMiddleware, compose } from 'redux'
+
+const win = window // 引用window是为了避免包过大, UglifyJsPlugin无法处理window这种全局变量
+
+const middlewires = []
+if (process.env.NODE_ENV !== 'production') {
+  middlewires.push(require('redux-immutable-state-invariant').default())
+}
+
+const storeEnhancers = compose(
+  applyMiddleware(...middlewires),
+  (win && win.devToolsExtension) ? win.devToolsExtension() : (f) => f,
+)
+
+export default createStore(reducer, {}, storeEnhancers)
+```
+
+- storeEnhancers - 为Store提供增强功能
+- compose - 将多个enhancer组合在一起
+- redux-immutable-state-invariant 只有在开发环境才加入到增强功能
+- 使用require时因为ES6的import不能出现在if语句中, 而且必须处于顶部
+
+
+![](/images/2017-11-09-00-03-09.jpg)
