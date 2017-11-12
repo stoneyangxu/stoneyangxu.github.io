@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "<深入浅出React和Redux> - React组件的性能优化"
+title:  "<深入浅出React和Redux> - React组件的性能优化 & 高阶组件"
 date:   2017-11-09 00:14:52
 categories: 读书笔记
 ---
